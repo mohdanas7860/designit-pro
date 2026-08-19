@@ -3,8 +3,8 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from './routes/auth';
-import projectRoutes from './routes/projects';
+import authRoutes from './routes/auth.js';
+import projectRoutes from './routes/projects.js';
 
 dotenv.config();
 
