@@ -1,0 +1,34 @@
+### 1. Test Database & Server Connection
+GET http://localhost:3001/
+
+### 2. User Signup
+POST http://localhost:3001/api/signup
+Content-Type: application/json
+
+{
+  "email": "test@canva.com",
+  "password": "password123",
+  "name": "Test User"
+}
+
+### 3. User Signin
+POST http://localhost:3001/api/signin
+Content-Type: application/json
+
+{
+  "email": "test@canva.com",
+  "password": "password123"
+}
+
+### 4. Save Project (Replace token after signin)
+POST http://localhost:3001/api/projects
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+
+{
+  "name": "My Canvas Project",
+  "data": {
+    "objects": [],
+    "background": "#ffffff"
+  }
+}

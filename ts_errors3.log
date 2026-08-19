@@ -1,0 +1,6 @@
+src/components/Editor/CanvasEditor.tsx(830,161): error TS2304: Cannot find name 'ZoomOut'.
+src/components/Editor/CanvasEditor.tsx(832,161): error TS2304: Cannot find name 'ZoomIn'.
+src/components/Editor/CanvasEditor.tsx(833,140): error TS2304: Cannot find name 'Maximize'.
+src/components/Editor/CanvasEditor.tsx(861,180): error TS2304: Cannot find name 'AlignTop'.
+src/components/Editor/CanvasEditor.tsx(862,185): error TS2304: Cannot find name 'Minus'.
+src/components/Editor/CanvasEditor.tsx(863,183): error TS2304: Cannot find name 'AlignBottom'.

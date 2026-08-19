@@ -1,0 +1,3 @@
+src/components/Editor/CanvasEditor.tsx(351,64): error TS1127: Invalid character.
+src/components/Editor/CanvasEditor.tsx(636,1): error TS1127: Invalid character.
+src/components/Editor/CanvasEditor.tsx(636,2): error TS1434: Unexpected keyword or identifier.

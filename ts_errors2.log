@@ -1,0 +1,3 @@
+src/components/Editor/CanvasEditor.tsx(102,12): error TS2554: Expected 0-1 arguments, but got 2.
+src/components/Editor/CanvasEditor.tsx(135,12): error TS2554: Expected 0-1 arguments, but got 2.
+src/components/Editor/CanvasEditor.tsx(333,39): error TS2559: Type '(img: any) => void' has no properties in common with type 'LoadImageOptions'.

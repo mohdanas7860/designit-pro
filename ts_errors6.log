@@ -1,0 +1,13 @@
+src/components/Editor/CanvasEditor.tsx(278,9): error TS2657: JSX expressions must have one parent element.
+src/components/Editor/CanvasEditor.tsx(282,78): error TS1127: Invalid character.
+src/components/Editor/CanvasEditor.tsx(282,230): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/Editor/CanvasEditor.tsx(282,231): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/components/Editor/CanvasEditor.tsx(284,19): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/components/Editor/CanvasEditor.tsx(285,77): error TS1127: Invalid character.
+src/components/Editor/CanvasEditor.tsx(285,232): error TS1381: Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+src/components/Editor/CanvasEditor.tsx(285,233): error TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+src/components/Editor/CanvasEditor.tsx(287,19): error TS17002: Expected corresponding JSX closing tag for 'div'.
+src/components/Editor/CanvasEditor.tsx(288,76): error TS1127: Invalid character.
+src/components/Editor/CanvasEditor.tsx(288,77): error TS1003: Identifier expected.
+src/components/Editor/CanvasEditor.tsx(288,77): error TS1005: ')' expected.
+src/components/Editor/CanvasEditor.tsx(528,37): error TS1005: '}' expected.

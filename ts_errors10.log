@@ -1,0 +1,40 @@
+src/components/Editor/CanvasEditor.tsx(4,13): error TS2300: Duplicate identifier 'fabric'.
+src/components/Editor/CanvasEditor.tsx(6,10): error TS2300: Duplicate identifier 'Canvas'.
+src/components/Editor/CanvasEditor.tsx(6,18): error TS2300: Duplicate identifier 'Gradient'.
+src/components/Editor/CanvasEditor.tsx(6,28): error TS2300: Duplicate identifier 'Rect'.
+src/components/Editor/CanvasEditor.tsx(6,34): error TS2300: Duplicate identifier 'Circle'.
+src/components/Editor/CanvasEditor.tsx(6,42): error TS2300: Duplicate identifier 'IText'.
+src/components/Editor/CanvasEditor.tsx(6,49): error TS2300: Duplicate identifier 'FabricImage'.
+src/components/Editor/CanvasEditor.tsx(6,62): error TS2300: Duplicate identifier 'FabricObject'.
+src/components/Editor/CanvasEditor.tsx(6,76): error TS2300: Duplicate identifier 'Shadow'.
+src/components/Editor/CanvasEditor.tsx(6,84): error TS2300: Duplicate identifier 'Triangle'.
+src/components/Editor/CanvasEditor.tsx(6,94): error TS2300: Duplicate identifier 'Line'.
+src/components/Editor/CanvasEditor.tsx(6,100): error TS2300: Duplicate identifier 'filters'.
+src/components/Editor/CanvasEditor.tsx(8,13): error TS2300: Duplicate identifier 'fabric'.
+src/components/Editor/CanvasEditor.tsx(10,10): error TS2300: Duplicate identifier 'Canvas'.
+src/components/Editor/CanvasEditor.tsx(10,18): error TS2300: Duplicate identifier 'Gradient'.
+src/components/Editor/CanvasEditor.tsx(10,28): error TS2300: Duplicate identifier 'Rect'.
+src/components/Editor/CanvasEditor.tsx(10,34): error TS2300: Duplicate identifier 'Circle'.
+src/components/Editor/CanvasEditor.tsx(10,42): error TS2300: Duplicate identifier 'IText'.
+src/components/Editor/CanvasEditor.tsx(10,49): error TS2300: Duplicate identifier 'FabricImage'.
+src/components/Editor/CanvasEditor.tsx(10,62): error TS2300: Duplicate identifier 'FabricObject'.
+src/components/Editor/CanvasEditor.tsx(10,76): error TS2300: Duplicate identifier 'Shadow'.
+src/components/Editor/CanvasEditor.tsx(10,84): error TS2300: Duplicate identifier 'Triangle'.
+src/components/Editor/CanvasEditor.tsx(10,94): error TS2300: Duplicate identifier 'Line'.
+src/components/Editor/CanvasEditor.tsx(10,100): error TS2300: Duplicate identifier 'filters'.
+src/components/Editor/CanvasEditor.tsx(62,12): error TS2451: Cannot redeclare block-scoped variable 'preset'.
+src/components/Editor/CanvasEditor.tsx(62,20): error TS2451: Cannot redeclare block-scoped variable 'setPreset'.
+src/components/Editor/CanvasEditor.tsx(63,11): error TS2451: Cannot redeclare block-scoped variable 'handlePresetChange'.
+src/components/Editor/CanvasEditor.tsx(78,12): error TS2451: Cannot redeclare block-scoped variable 'preset'.
+src/components/Editor/CanvasEditor.tsx(78,20): error TS2451: Cannot redeclare block-scoped variable 'setPreset'.
+src/components/Editor/CanvasEditor.tsx(79,11): error TS2451: Cannot redeclare block-scoped variable 'handlePresetChange'.
+src/components/Editor/CanvasEditor.tsx(228,13): error TS2451: Cannot redeclare block-scoped variable 'snapLines'.
+src/components/Editor/CanvasEditor.tsx(230,15): error TS2451: Cannot redeclare block-scoped variable 'clearSnapLines'.
+src/components/Editor/CanvasEditor.tsx(284,13): error TS2451: Cannot redeclare block-scoped variable 'snapLines'.
+src/components/Editor/CanvasEditor.tsx(286,15): error TS2451: Cannot redeclare block-scoped variable 'clearSnapLines'.
+src/components/Editor/CanvasEditor.tsx(642,22): error TS2304: Cannot find name 'LayoutTemplate'.
+src/components/Editor/CanvasEditor.tsx(645,22): error TS2304: Cannot find name 'Shapes'.
+src/components/Editor/CanvasEditor.tsx(648,22): error TS2304: Cannot find name 'UploadCloud'.
+src/components/Editor/CanvasEditor.tsx(651,22): error TS2304: Cannot find name 'TypeIcon'.
+src/components/Editor/CanvasEditor.tsx(654,22): error TS2304: Cannot find name 'LayersIcon'.
+src/components/Editor/CanvasEditor.tsx(813,142): error TS2304: Cannot find name 'Paintbrush'.

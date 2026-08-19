@@ -1,0 +1,9 @@
+{
+  "errs": [
+    "src/components/Editor/CanvasEditor.tsx(705,46): error TS2304: Cannot find name 'addCircleFrame'.\r",
+    "src/components/Editor/CanvasEditor.tsx(706,46): error TS2304: Cannot find name 'addStarFrame'.\r",
+    "src/components/Editor/CanvasEditor.tsx(715,87): error TS2304: Cannot find name 'addPhoto'.\r",
+    "src/components/Editor/CanvasEditor.tsx(854,50): error TS2304: Cannot find name 'removeBg'.\r",
+    "src/components/Editor/CanvasEditor.tsx(862,79): error TS2304: Cannot find name 'fillFrameWithImage'.\r"
+  ]
+}

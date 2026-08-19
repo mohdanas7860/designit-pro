@@ -1,0 +1,2 @@
+src/components/Editor/CanvasEditor.tsx(33,5): error TS2305: Module '"lucide-react"' has no exported member 'AlignTop'.
+src/components/Editor/CanvasEditor.tsx(34,5): error TS2305: Module '"lucide-react"' has no exported member 'AlignBottom'.
