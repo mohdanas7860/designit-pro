@@ -11,17 +11,16 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// In dev, nextjs runs on 3000, we run on 3001
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-    origin: '*', // For demo purposes, restrict in production
+    origin: '*',
 }));
 app.use(express.json({ limit: '50mb' }));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
+// Yahan /api/auth ki jagah direct /api kar diya hai taaki /api/register aur /api/login seedha match ho jaye
+app.use('/api', authRoutes);
+app.use('/api', projectRoutes);
 
 app.get('/health', (req, res) => {
     res.send('DesignIt Pro API OK');
@@ -38,16 +37,12 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
-    // When a user opens a project
     socket.on('join-project', (projectId: string, user: any) => {
         socket.join(projectId);
         console.log(`Socket ${socket.id} joined project ${projectId}`);
-
-        // Let others in the room know someone joined
         socket.to(projectId).emit('user-joined', { socketId: socket.id, user });
     });
 
-    // Cursor movement Broadcast
     socket.on('cursor-move', (data: { projectId: string, cursor: { x: number, y: number }, user: any }) => {
         socket.to(data.projectId).emit('cursor-update', {
             socketId: socket.id,
@@ -56,9 +51,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // Fabric Object Updates Broadcasting
     socket.on('object-modified', (data: { projectId: string, state: any }) => {
-        // Broadcast the full JSON state or specific modified objects to others
         socket.to(data.projectId).emit('object-modified-sync', data.state);
     });
 

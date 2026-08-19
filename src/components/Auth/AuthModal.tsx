@@ -32,7 +32,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
         setError('');
 
         try {
-            const endpoint = isLogin ? '/signin' : '/signup';
+            // Yahan /signin ki jagah /login aur /signup ki jagah /register kar diya hai
+            const endpoint = isLogin ? '/login' : '/register';
             const payload = isLogin ? { email, password } : { email, password, name };
 
             const { data } = await api.post(endpoint, payload);
