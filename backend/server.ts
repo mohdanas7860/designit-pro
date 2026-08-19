@@ -13,14 +13,9 @@ const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({
-    origin: '*',
-}));
-app.use(express.json({ limit: '50mb' }));
-
-// Yahan /api/auth ki jagah direct /api kar diya hai taaki /api/register aur /api/login seedha match ho jaye
-app.use('/api', authRoutes);
-app.use('/api', projectRoutes);
+// Routes ko alag-alag theek tarike se mount kar rahe hain:
+app.use('/api', authRoutes);          // Ye /api/login aur /api/register ke liye hai
+app.use('/api/projects', projectRoutes); // Ye /api/projects (save/load) ke liye hai
 
 app.get('/health', (req, res) => {
     res.send('DesignIt Pro API OK');
