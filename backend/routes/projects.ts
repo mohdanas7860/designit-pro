@@ -1,11 +1,18 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pkg from 'pg';
 import jwt from 'jsonwebtoken';
 
+const { Pool } = pkg;
 const router = express.Router();
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 // Middleware to authenticate JWT
 const authenticateUser = (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;

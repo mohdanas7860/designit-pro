@@ -2,9 +2,11 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pkg from 'pg';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: new PrismaPg(new pkg.Pool({ connectionString: process.env.DATABASE_URL })) });
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
 router.post('/register', async (req, res) => {
