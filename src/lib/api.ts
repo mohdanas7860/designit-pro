@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return `${process.env.NEXT_PUBLIC_API_URL}${process.env.NEXT_PUBLIC_API_URL.endsWith('/api') ? '' : '/api'}`;
+    }
+    return 'https://designit-pro.onrender.com/api';
+};
+
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+    baseURL: getBaseUrl(),
+    withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
