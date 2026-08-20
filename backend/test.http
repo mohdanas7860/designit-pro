@@ -23,7 +23,7 @@ Content-Type: application/json
 ### 4. Save Project (Replace token after signin)
 POST http://localhost:3001/api/projects
 Content-Type: application/json
-Authorization: Bearer YOUR_JWT_TOKEN_HERE
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjYmU2MWY2Yi0yMjdhLTRhYjQtOGUwZS02MTNkMWM2NzY2M2YiLCJpYXQiOjE3ODcxMTQ0MjksImV4cCI6MTc4NzcxOTIyOX0.l2Ak1PaXpbp4ZY_sDe7dRoFkRDfoMb5XJm-cb4bfKV4
 
 {
   "name": "My Canvas Project",

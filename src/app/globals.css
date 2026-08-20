@@ -20,7 +20,9 @@
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #09090b 70%);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
 }

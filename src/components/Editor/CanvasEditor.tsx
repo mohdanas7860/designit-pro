@@ -3,6 +3,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import * as fabric from 'fabric';
 import { jsPDF } from 'jspdf';
 import { removeBackground } from '@imgly/background-removal';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Square, Circle as CircleIcon, Triangle as TriangleIcon, Minus, Star,
     Type, ImagePlus, LayoutTemplate, Layers as LayersIcon, AlignLeft, AlignCenter,
@@ -11,7 +12,8 @@ import {
     Eye, EyeOff, Sparkles, FileImage, FileJson, Image as ImageIcon, Wand2,
     Frame, PanelTop, Grid, Scissors, FileText, Loader2, PlusCircle, MinusCircle,
     ChevronUp, ChevronDown, ArrowLeft, Printer, Palette, Crop, Check, RefreshCw, X,
-    Wallpaper, User, Save, Cloud, MousePointer2
+    Wallpaper, User, Save, Cloud, MousePointer2, Monitor, Info, Lock, Unlock,
+    CopyPlus, MoreHorizontal, Clock, Link as LinkIcon
 } from 'lucide-react';
 import AuthModal from '@/components/Auth/AuthModal';
 import api from '@/lib/api';
@@ -25,10 +27,11 @@ interface PageData {
     backgroundColor: string;
 }
 
-export default function CanvasEditor() {
+export default function CanvasEditor({ initialView = 'editor' }: { initialView?: 'editor' | 'passport-studio' }) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     // ── Navigation State ─────────────────────────────────────────────────────
-    const [currentView, setCurrentView] = useState<'dashboard' | 'editor' | 'passport-studio'>('dashboard');
-    const [dashboardTab, setDashboardTab] = useState<'home' | 'templates' | 'projects'>('home');
+    const [currentView, setCurrentView] = useState<'editor' | 'passport-studio'>(initialView);
     const [searchQuery, setSearchQuery] = useState('');
 
     // ── Auth & Persistence State ─────────────────────────────────────────────
@@ -113,6 +116,14 @@ export default function CanvasEditor() {
     const [canvasWidth, setCanvasWidth] = useState(1080);
     const [canvasHeight, setCanvasHeight] = useState(1080);
     const [zoomRatio, setZoomRatio] = useState(0.5);
+
+    useEffect(() => {
+        const sizeParam = searchParams.get('size');
+        if (sizeParam === 'A4') { setCanvasWidth(794); setCanvasHeight(1123); }
+        else if (sizeParam === 'A3') { setCanvasWidth(1123); setCanvasHeight(1587); }
+        else if (sizeParam === 'A2') { setCanvasWidth(1587); setCanvasHeight(2245); }
+        else if (sizeParam === 'IG') { setCanvasWidth(1080); setCanvasHeight(1080); }
+    }, [searchParams]);
     const [activePreset, setActivePreset] = useState('IG');
     const [activeTab, setActiveTab] = useState('elements');
     const [exportOpen, setExportOpen] = useState(false);
@@ -151,6 +162,8 @@ export default function CanvasEditor() {
     const [borderStroke, setBorderStroke] = useState<boolean>(true);
     const [isRemovingBgPassport, setIsRemovingBgPassport] = useState(false);
     const [passportZoomRatio, setPassportZoomRatio] = useState(0.45);
+    const [contextMenu, setContextMenu] = useState<{ visible: boolean, x: number, y: number } | null>(null);
+    const [inlineMenuPos, setInlineMenuPos] = useState<{ x: number, y: number } | null>(null);
 
     // Single Photo Adjustments
     const [passportBrightness, setPassportBrightness] = useState(0);
@@ -806,9 +819,21 @@ export default function CanvasEditor() {
 
     // General Editor Canvas Init
     useEffect(() => {
-        if (currentView !== 'editor') return;
+        if (currentView === 'editor') {
+            const handleMouseWheel = (opt: any) => {
+                const evt = opt.e;
+                if (!evt.ctrlKey) return;
+                const c = fabricCanvasRef.current;
+                if (!c) return;
+                let zoom = c.getZoom();
+                zoom *= 0.999 ** evt.deltaY;
+                if (zoom > 20) zoom = 20;
+                if (zoom < 0.01) zoom = 0.01;
+                c.zoomToPoint({ x: evt.offsetX, y: evt.offsetY }, zoom);
+                evt.preventDefault();
+                evt.stopPropagation();
+            };
 
-        const timer = setTimeout(() => {
             if (!canvasElRef.current) return;
             if (fabricCanvasRef.current) {
                 try { fabricCanvasRef.current.dispose(); } catch (_) { }
@@ -824,20 +849,114 @@ export default function CanvasEditor() {
             fabricCanvasRef.current = canvas;
 
             const onModified = () => { pushHistory(); syncState(); };
+
+            const updateInlineMenu = () => {
+                const active = canvas.getActiveObject();
+                if (active) {
+                    const br = active.getBoundingRect();
+                    setInlineMenuPos({ x: br.left + (br.width / 2), y: Math.max(10, br.top - 45) });
+                } else {
+                    setInlineMenuPos(null);
+                }
+            };
+
             canvas.on('object:modified', onModified);
             canvas.on('object:added', syncState);
             canvas.on('object:removed', syncState);
-            canvas.on('selection:created', syncState);
-            canvas.on('selection:updated', syncState);
-            canvas.on('selection:cleared', syncState);
-            canvas.on('mouse:move', handleCanvasMouseMove);
+            canvas.on('selection:created', () => { syncState(); updateInlineMenu(); });
+            canvas.on('selection:updated', () => { syncState(); updateInlineMenu(); });
+            canvas.on('selection:cleared', () => { syncState(); updateInlineMenu(); });
+            canvas.on('object:moving', updateInlineMenu);
+            canvas.on('object:scaling', updateInlineMenu);
+            canvas.on('object:rotating', updateInlineMenu);
 
-            canvas.renderAll();
-            setTimeout(() => pushHistory(), 100);
-        }, 50);
+            canvas.on('mouse:move', handleCanvasMouseMove);
+            canvas.on('mouse:wheel', handleMouseWheel);
+
+            // Hydrate canvas with selected template if present in URL
+            const templateImgUrl = searchParams.get('templateImg');
+            if (templateImgUrl) {
+                const ImageClass = (fabric as any).FabricImage || (fabric as any).Image;
+
+                // 1. Background Fill Layer (Editable)
+                const bgRect = new (fabric as any).Rect({
+                    left: 0, top: 0,
+                    width: canvasWidth || 1080,
+                    height: canvasHeight || 1080,
+                    fill: '#1a1a24',
+                    selectable: true,
+                    name: 'Background'
+                });
+                canvas.add(bgRect);
+
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = templateImgUrl;
+                img.onload = () => {
+                    // 2. Load the main preview graphic as a central object
+                    const fabricImg = new ImageClass(img);
+                    const scale = Math.min((canvasWidth || 1080) / fabricImg.width, (canvasHeight || 1080) / fabricImg.height) * 0.7;
+                    fabricImg.set({
+                        scaleX: scale,
+                        scaleY: scale,
+                        left: (canvasWidth || 1080) / 2,
+                        top: (canvasHeight || 1080) / 2 + 60,
+                        originX: 'center',
+                        originY: 'center',
+                        name: 'Hero Image'
+                    });
+                    canvas.add(fabricImg);
+
+                    // 3. Add High Fidelity Editable Headline Text
+                    const headline = new (fabric as any).IText("Premium Design Template", {
+                        left: (canvasWidth || 1080) / 2,
+                        top: 200,
+                        fontFamily: 'Inter',
+                        fontSize: 64,
+                        fontWeight: 'bold',
+                        fill: '#ffffff',
+                        originX: 'center',
+                        textAlign: 'center',
+                        name: 'Headline'
+                    });
+                    canvas.add(headline);
+
+                    // 4. Add Subheading typography block
+                    const subheading = new (fabric as any).IText("Double click to edit this typography block. Drag to reposition.", {
+                        left: (canvasWidth || 1080) / 2,
+                        top: 300,
+                        fontFamily: 'Inter',
+                        fontSize: 28,
+                        fill: '#a1a1aa',
+                        originX: 'center',
+                        textAlign: 'center',
+                        name: 'Subtitle'
+                    });
+                    canvas.add(subheading);
+
+                    // 5. Add a decorative accent block
+                    const accent = new (fabric as any).Rect({
+                        left: (canvasWidth || 1080) / 2,
+                        top: 140,
+                        width: 120,
+                        height: 6,
+                        fill: '#8b5cf6',
+                        originX: 'center',
+                        rx: 3, ry: 3,
+                        name: 'Accent Bar'
+                    });
+                    canvas.add(accent);
+
+                    canvas.renderAll();
+                    setTimeout(() => pushHistory(), 100);
+                };
+            } else {
+                canvas.renderAll();
+                setTimeout(() => pushHistory(), 100);
+            }
+        }
 
         return () => {
-            clearTimeout(timer);
             if (fabricCanvasRef.current) {
                 try { fabricCanvasRef.current.dispose(); } catch (_) { }
                 fabricCanvasRef.current = null;
@@ -996,6 +1115,18 @@ export default function CanvasEditor() {
         c.clear();
         c.backgroundColor = '#ffffff';
         c.renderAll();
+        syncState();
+    };
+
+    const duplicatePage = () => {
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+        const updated = [...pages];
+        updated[activePageIndex] = { ...updated[activePageIndex], json: c.toJSON(), backgroundColor: (c.backgroundColor as string) || '#ffffff' };
+        const dupPage: PageData = { id: `page-${Date.now()}`, name: `Copy of ${updated[activePageIndex].name}`, json: updated[activePageIndex].json, backgroundColor: updated[activePageIndex].backgroundColor };
+        setPages([...updated, dupPage]);
+        setActivePageIndex(updated.length);
+        // Context is already holding the current JSON, so it implicitly renders duplicate on screen.
         syncState();
     };
 
@@ -1220,111 +1351,6 @@ export default function CanvasEditor() {
     ];
 
     // =========================================================================
-    // VIEW 1: HOME DASHBOARD
-    // =========================================================================
-    if (currentView === 'dashboard') {
-        return (
-            <div className="min-h-screen bg-[#0a0a0f] text-white flex relative font-sans">
-                <nav className="w-64 bg-[#111118] border-r border-zinc-800 flex flex-col p-5 shrink-0">
-                    <div className="flex items-center space-x-2 mb-8">
-                        <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center"><PanelTop size={16} /></div>
-                        <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">DesignIt Pro</span>
-                    </div>
-                    {(['home', 'templates', 'projects'] as const).map(tab => (
-                        <button key={tab} onClick={() => setDashboardTab(tab)}
-                            className={`w-full text-left px-4 py-2.5 rounded-lg mb-1 font-medium text-sm transition-colors capitalize ${dashboardTab === tab ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
-                            {tab}
-                        </button>
-                    ))}
-                </nav>
-
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-8">
-                        <div className="relative w-64">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search templates..." className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-indigo-500 text-zinc-300" />
-                        </div>
-                        <div className="flex items-center gap-3">
-                            {!authUser ? (
-                                <button onClick={() => setIsAuthOpen(true)} className="flex items-center gap-1.5 text-zinc-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
-                                    <User size={15} /> Login / Sign Up
-                                </button>
-                            ) : (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-xs text-indigo-300 font-semibold shadow-sm">
-                                    <div className="w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-white">{authUser.name?.charAt(0) || authUser.email?.charAt(0)}</div>
-                                    <span className="max-w-[100px] truncate">{authUser.name || authUser.email}</span>
-                                    <button onClick={() => { localStorage.removeItem('designit_token'); localStorage.removeItem('designit_user'); setAuthUser(null); }} className="text-zinc-500 hover:text-red-400 ml-1"><X size={12} /></button>
-                                </div>
-                            )}
-                            <div className="w-px h-5 bg-zinc-800 mx-1"></div>
-                            <button onClick={() => setCurrentView('passport-studio')} className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-full font-semibold text-xs transition-all hover:scale-105 flex items-center gap-1.5 shadow-lg shadow-emerald-900/30">
-                                <Scissors size={14} /> Open Passport Studio
-                            </button>
-                            <button onClick={() => setCurrentView('editor')} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-5 py-2 rounded-full font-semibold text-sm transition-all hover:scale-105 shadow-lg shadow-indigo-900/30">
-                                Open Canvas Editor →
-                            </button>
-                        </div>
-                    </header>
-
-                    <main className="flex-1 overflow-y-auto p-8">
-                        {dashboardTab === 'home' && (
-                            <>
-                                <h1 className="text-3xl font-bold mb-1">Start Creating</h1>
-                                <p className="text-zinc-400 text-sm mb-6">Choose a canvas size, launch the dedicated passport maker, or pick a template.</p>
-
-                                <div onClick={() => setCurrentView('passport-studio')} className="mb-8 p-6 bg-gradient-to-r from-indigo-950/50 via-purple-950/40 to-zinc-900 border-2 border-indigo-500/50 hover:border-indigo-400 rounded-3xl cursor-pointer transition-all hover:scale-[1.01] flex items-center justify-between shadow-2xl">
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-600/40">
-                                            <Scissors size={30} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-bold text-white flex items-center gap-2.5">
-                                                Professional Passport Photo Studio
-                                                <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">FULL STUDIO</span>
-                                            </h3>
-                                            <p className="text-xs text-zinc-400 mt-1 max-w-xl leading-relaxed">Single photo staging $\rightarrow$ Auto 3.5cm x 4.5cm crop $\rightarrow$ Manual crop & auto light enhance $\rightarrow$ 1-Click Generate 42 (A4) / 8 (4x6) print ready sheet.</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 flex items-center gap-1.5">
-                                        Launch Studio →
-                                    </span>
-                                </div>
-
-                                <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-4">Canvas Sizes</h2>
-                                <div className="grid grid-cols-3 gap-4 mb-10">
-                                    {presetCards.filter(p => !searchQuery || p.label.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
-                                        <button key={p.key} onClick={() => applyPreset(p.key, p.w, p.h)}
-                                            className="group p-5 bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 rounded-2xl text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-indigo-900/20">
-                                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-2xl mb-3`}>{p.icon}</div>
-                                            <div className="font-semibold">{p.label}</div>
-                                            <div className="text-xs text-zinc-500 mt-0.5">{p.sub}</div>
-                                        </button>
-                                    ))}
-                                </div>
-
-                                <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-widest mb-4">Quick Templates</h2>
-                                <div className="grid grid-cols-3 gap-4">
-                                    {dashTemplates.filter(t => !searchQuery || t.label.toLowerCase().includes(searchQuery.toLowerCase())).map(t => (
-                                        <button key={t.key} onClick={() => { setCurrentView('editor'); }}
-                                            className="group h-36 bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 rounded-2xl overflow-hidden relative transition-all hover:scale-[1.02]">
-                                            <div className={`absolute inset-0 bg-gradient-to-br ${t.thumb} opacity-70`} />
-                                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className="text-3xl mb-2">{t.icon}</span>
-                                                <span className="font-semibold text-white text-sm">{t.label}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-                    </main>
-                </div>
-                <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLoginSuccess={setAuthUser} />
-            </div>
-        );
-    }
-
-    // =========================================================================
     // VIEW 2: DEDICATED PASSPORT PHOTO STUDIO
     // =========================================================================
     if (currentView === 'passport-studio') {
@@ -1333,7 +1359,7 @@ export default function CanvasEditor() {
             <div className="flex flex-col h-screen w-screen bg-[#0c0c0e] text-white overflow-hidden font-sans">
                 <header className="h-14 bg-[#121217] border-b border-[#1e1e24] flex items-center justify-between px-6 shrink-0 z-10">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => { setCurrentView('dashboard'); handleClearPassportPhoto(); }} className="flex items-center gap-1.5 text-zinc-400 hover:text-white text-xs font-semibold bg-[#1a1a22] hover:bg-zinc-800 px-3 py-1.5 rounded-lg border border-[#262633] transition">
+                        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-1.5 text-zinc-400 hover:text-white text-xs font-semibold bg-[#1a1a22] hover:bg-zinc-800 px-3 py-1.5 rounded-lg border border-[#262633] transition">
                             <ArrowLeft size={14} /> Back to Dashboard
                         </button>
                         <div className="h-4 w-px bg-zinc-700"></div>
@@ -1601,12 +1627,14 @@ export default function CanvasEditor() {
     // VIEW 3: FULL CANVAS GRAPHIC DESIGN EDITOR
     // =========================================================================
     const sidebarTabs = [
+        { id: 'templates', icon: <LayoutTemplate size={18} />, label: 'Templates' },
         { id: 'elements', icon: <Square size={18} />, label: 'Elements' },
         { id: 'text', icon: <Type size={18} />, label: 'Text' },
-        { id: 'uploads', icon: <ImagePlus size={18} />, label: 'Media' },
-        { id: 'background', icon: <Wallpaper size={18} />, label: 'Background' },
-        { id: 'templates', icon: <LayoutTemplate size={18} />, label: 'Templates' },
-        { id: 'layers', icon: <LayersIcon size={18} />, label: 'Layers' },
+        { id: 'brand', icon: <Palette size={18} />, label: 'Brand' },
+        { id: 'uploads', icon: <ImagePlus size={18} />, label: 'Uploads' },
+        { id: 'tools', icon: <Wand2 size={18} />, label: 'Tools' },
+        { id: 'projects', icon: <LayersIcon size={18} />, label: 'Projects' },
+        { id: 'apps', icon: <Grid size={18} />, label: 'Apps' },
     ];
 
     return (
@@ -1638,6 +1666,29 @@ export default function CanvasEditor() {
                     </div>
 
                     <div className="p-3 flex-1 overflow-y-auto space-y-4">
+                        {/* TEMPLATES */}
+                        {activeTab === 'templates' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400', n: 'Social Post' },
+                                        { url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400', n: 'Presentation' },
+                                        { url: 'https://images.unsplash.com/photo-1588190438148-5c4bb8934524?w=400', n: 'Menu' },
+                                        { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400', n: 'Gradient' },
+                                        { url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400', n: 'Modern Art' },
+                                        { url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400', n: 'Minimal' }
+                                    ].map((t, i) => (
+                                        <button key={i} onClick={() => alert('Feature coming soon: Dynamic Hydration from Sidebar')} className="relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden group border border-zinc-700 hover:border-indigo-500 transition-all">
+                                            <img src={t.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={t.n} loading="lazy" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                                                <span className="text-[10px] font-bold text-white tracking-wide">{t.n}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* ELEMENTS */}
                         {activeTab === 'elements' && (
                             <>
@@ -1685,6 +1736,75 @@ export default function CanvasEditor() {
                                         <button key={i} onClick={() => addStockPhoto(url)}
                                             className="aspect-video rounded-lg overflow-hidden border border-zinc-700 hover:border-indigo-400 transition-colors">
                                             <img src={url} alt="stock" className="w-full h-full object-cover" loading="lazy" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* BRAND KIT */}
+                        {activeTab === 'brand' && (
+                            <div className="space-y-4 flex flex-col items-center text-center py-10 px-2 animate-in fade-in zoom-in-95">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center p-0.5 mb-2 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+                                    <div className="w-full h-full bg-[#121216] rounded-full flex items-center justify-center">
+                                        <Palette size={24} className="text-indigo-400" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-white mb-2 flex items-center justify-center gap-2">Brand Kit <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 text-[9px] uppercase font-black rounded border border-yellow-500/20 tracking-wider">Pro</span></h4>
+                                    <p className="text-xs text-zinc-400 leading-relaxed max-w-[200px] mx-auto">Lock in your team's visual identity. Upload custom logos, fonts, and hex palettes.</p>
+                                </div>
+                                <button className="w-full mt-2 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl text-xs font-bold text-white transition-all shadow-md">Set up Brand Kit</button>
+                            </div>
+                        )}
+
+                        {/* PRO TOOLS */}
+                        {activeTab === 'tools' && (
+                            <div className="space-y-4 py-2 animate-in fade-in slide-in-from-bottom-4">
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Magic Studio</p>
+                                <button disabled className="w-full p-4 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 border border-indigo-500/20 rounded-2xl flex flex-col items-center gap-2 transition-all opacity-80 cursor-not-allowed group text-center">
+                                    <Wand2 size={24} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                                    <div>
+                                        <h4 className="text-xs font-bold text-indigo-300">Magic Write</h4>
+                                        <p className="text-[10px] text-zinc-400 mt-1">Generate text with AI</p>
+                                    </div>
+                                </button>
+                                <button disabled className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center gap-3 opacity-60 cursor-not-allowed transition-all">
+                                    <div className="p-2 bg-zinc-800 rounded-lg text-emerald-400"><LayersIcon size={16} /></div>
+                                    <div className="text-left"><h4 className="text-xs font-bold text-zinc-300">Magic Morph</h4><span className="text-[10px] text-zinc-500">Transform typography</span></div>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* PROJECTS */}
+                        {activeTab === 'projects' && (
+                            <div className="space-y-4 py-8 text-center px-4 animate-in fade-in">
+                                <LayersIcon size={32} className="mx-auto text-zinc-600 mb-3" />
+                                <h4 className="text-sm font-bold text-white mb-1">Your Projects</h4>
+                                <p className="text-xs text-zinc-500 mb-6 leading-relaxed">Search your folders, previous designs, and imported assets.</p>
+                                <div className="text-left space-y-2">
+                                    <button className="w-full p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-3 transition-colors">
+                                        <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400"><Plus size={14} /></div>
+                                        <span className="text-xs font-semibold text-zinc-300">Create new folder</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* APPS */}
+                        {activeTab === 'apps' && (
+                            <div className="space-y-4 py-4 animate-in fade-in slide-in-from-right-4">
+                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Integrations</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {[
+                                        { n: 'Typecraft', c: 'bg-orange-500' },
+                                        { n: 'Mockups', c: 'bg-emerald-500' },
+                                        { n: 'QR Code', c: 'bg-zinc-700' },
+                                        { n: 'Drive', c: 'bg-blue-600' }
+                                    ].map((a, i) => (
+                                        <button key={i} className="aspect-square bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all">
+                                            <div className={`w-8 h-8 rounded-lg ${a.c} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>{a.n[0]}</div>
+                                            <span className="text-[10px] font-bold text-zinc-400">{a.n}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -1772,9 +1892,9 @@ export default function CanvasEditor() {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <header className="h-14 bg-[#111118]/95 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between px-5 shrink-0 z-10">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setCurrentView('dashboard')}
-                                className="flex items-center gap-1.5 text-zinc-400 hover:text-white text-sm font-medium bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors border border-zinc-700">
-                                <Home size={13} /><span>Home</span>
+                            <button onClick={() => router.push('/dashboard')}
+                                className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#262633] border border-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition group z-50">
+                                <Home size={13} />
                             </button>
                             <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-4 text-zinc-300">
                                 <button onClick={undo} title="Undo (Ctrl+Z)" className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"><Undo2 size={15} /></button>
@@ -1850,7 +1970,70 @@ export default function CanvasEditor() {
                         </div>
                     </header>
 
+                    {/* Top Context Toolbar */}
+                    <div className="h-14 bg-[#18181b] border-b border-zinc-800/80 flex items-center px-4 gap-4 shrink-0 overflow-x-auto z-10 shadow-sm scrollbar-hide">
+                        {!activeObject ? (
+                            <span className="text-zinc-600 text-[11px] font-semibold uppercase tracking-widest pl-2">Select an element on canvas to edit properties</span>
+                        ) : (
+                            <div className="flex items-center gap-4 h-full py-1">
+                                <div className="flex items-center gap-1 border-r border-zinc-700/50 pr-4">
+                                    <button onClick={copy} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white" title="Copy"><Copy size={15} /></button>
+                                    <button onClick={() => { copy(); paste(); }} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white" title="Duplicate"><Copy size={15} /></button>
+                                    <button onClick={deleteSelected} className="p-1.5 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-zinc-400" title="Delete"><Trash2 size={15} /></button>
+                                </div>
+
+                                {activeObject.type === 'i-text' && (
+                                    <div className="flex items-center gap-4 border-r border-zinc-700/50 pr-4">
+                                        <div className="flex items-center gap-2">
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Color</label>
+                                            <input type="color" value={typeof getProp('fill', '#000000') === 'string' ? getProp('fill', '#000000') : '#000000'} onChange={e => setProp('fill', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                        </div>
+                                        <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-zinc-800">
+                                            <button onClick={() => setProp('fontWeight', getProp('fontWeight', 'normal') === 'bold' ? 'normal' : 'bold')} className={`p-1.5 rounded-md ${getProp('fontWeight') === 'bold' ? 'bg-indigo-600/30 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Bold size={14} /></button>
+                                            <button onClick={() => setProp('fontStyle', getProp('fontStyle', 'normal') === 'italic' ? 'normal' : 'italic')} className={`p-1.5 rounded-md ${getProp('fontStyle') === 'italic' ? 'bg-indigo-600/30 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Italic size={14} /></button>
+                                        </div>
+                                        <div className="flex items-center gap-2 bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-800">
+                                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Size</label>
+                                            <input type="number" value={getProp('fontSize', 24)} onChange={e => setProp('fontSize', parseInt(e.target.value))} className="w-12 bg-transparent text-xs text-white text-center outline-none" min="8" max="200" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(activeObject.type === 'image' || activeObject.type === 'FabricImage') && (
+                                    <div className="flex items-center gap-3 border-r border-zinc-700/50 pr-4">
+                                        <button onClick={() => { setIsCroppingEditor(true); startIndependentImageCrop(fabricCanvasRef.current); }} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-indigo-400"><Crop size={14} /> Crop</button>
+                                        <button onClick={handleRemoveBackgroundEditor} disabled={isRemovingBgEditor} className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 disabled:opacity-50 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-white shadow-md">
+                                            {isRemovingBgEditor ? <><Loader2 size={13} className="animate-spin" /> Removing...</> : <><Wand2 size={13} /> BG Remover</>}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {activeObject.type !== 'i-text' && activeObject.type !== 'image' && activeObject.type !== 'FabricImage' && (
+                                    <div className="flex items-center gap-2 border-r border-zinc-700/50 pr-4">
+                                        <label className="text-[10px] text-zinc-500 font-bold uppercase">Color</label>
+                                        <input type="color" value={typeof getProp('fill', '#6366f1') === 'string' ? getProp('fill', '#6366f1') : '#6366f1'} onChange={e => setProp('fill', e.target.value)} className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-0" />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 border-r border-zinc-700/50 pr-4">
+                                    <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                                        {[['left', <AlignLeft key="1" size={14} />], ['center-h', <AlignCenter key="2" size={14} />], ['right', <AlignRight key="3" size={14} />]].map(([d, icon]) => (
+                                            <button key={d as string} onClick={() => alignObj(d as string)} className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">{icon}</button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <label className="text-[10px] pr-1 text-zinc-500 font-bold uppercase">Opacity</label>
+                                    <input type="range" min="0" max="1" step="0.05" value={getProp('opacity', 1)} onChange={e => setProp('opacity', parseFloat(e.target.value))} className="w-20 accent-indigo-500" />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <main ref={wrapperRef} className="flex-1 bg-[#121216] flex items-center justify-center overflow-hidden relative"
+                        onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY }); }}
+                        onClick={() => setContextMenu(null)}
                         style={{ backgroundImage: 'radial-gradient(circle, #27272a 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
 
                         {isCroppingEditor && (
@@ -1865,6 +2048,32 @@ export default function CanvasEditor() {
                             </div>
                         )}
 
+                        {inlineMenuPos && activeObject && !isCroppingEditor && (
+                            <div className="absolute z-[100] bg-[#1e1e24] border border-zinc-700 shadow-xl rounded-lg py-1 px-1.5 flex items-center gap-1 zoom-in-95 animate-in pointer-events-auto"
+                                style={{ left: inlineMenuPos.x, top: inlineMenuPos.y, transform: 'translate(-50%, -100%)' }}>
+                                <button onClick={copy} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Copy"><Copy size={13} /></button>
+                                <button onClick={() => { copy(); paste(); }} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Duplicate"><CopyPlus size={13} /></button>
+                                <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                                <button onClick={() => {
+                                    const c = fabricCanvasRef.current;
+                                    if (c && activeObject) {
+                                        if (activeObject.lockMovementX) {
+                                            activeObject.set({ lockMovementX: false, lockMovementY: false, lockRotation: false, lockScalingX: false, lockScalingY: false });
+                                        } else {
+                                            activeObject.set({ lockMovementX: true, lockMovementY: true, lockRotation: true, lockScalingX: true, lockScalingY: true });
+                                        }
+                                        c.renderAll();
+                                        syncState();
+                                    }
+                                }} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Lock/Unlock">
+                                    {activeObject.lockMovementX ? <Lock size={13} /> : <Unlock size={13} />}
+                                </button>
+                                <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                                <button onClick={deleteSelected} className="p-1.5 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded transition-colors" title="Delete"><Trash2 size={13} /></button>
+                                <button onClick={(e) => setContextMenu({ visible: true, x: e.clientX, y: e.clientY })} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="More options"><MoreHorizontal size={13} /></button>
+                            </div>
+                        )}
+
                         <div className="bg-white rounded-sm shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-white/10 origin-center transition-all"
                             style={{ width: canvasWidth, height: canvasHeight, transform: `scale(${zoomRatio})` }}>
                             {Object.values(activeCursors).map((c: any) => (
@@ -1875,140 +2084,63 @@ export default function CanvasEditor() {
                             ))}
                             <canvas ref={canvasElRef} />
                         </div>
+
+                        {/* Canva-Style Context Menu Overlay */}
+                        {contextMenu && contextMenu.visible && (
+                            <div
+                                className="fixed bg-[#1a1a1f] border border-zinc-800 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden z-[9999] text-sm text-zinc-300 font-medium py-1 animate-in zoom-in-95 duration-100"
+                                style={{ top: contextMenu.y, left: contextMenu.x, width: 220 }}
+                                onClick={(e) => e.stopPropagation()}
+                                onContextMenu={(e) => e.preventDefault()}
+                            >
+                                <button onClick={() => { copy(); setContextMenu(null); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Copy size={14} className="text-zinc-500 group-hover:text-white" /> Copy</div><span className="text-[10px] text-zinc-600 group-hover:text-white/60">Ctrl C</span>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Copy style activated!'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><FileText size={14} className="text-zinc-500 group-hover:text-white" /> Copy style</div><span className="text-[10px] text-zinc-600 group-hover:text-white/60">Ctrl Alt C</span>
+                                </button>
+                                <button onClick={() => { paste(); setContextMenu(null); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Monitor size={14} className="text-zinc-500 group-hover:text-white" /> Paste</div><span className="text-[10px] text-zinc-600 group-hover:text-white/60">Ctrl V</span>
+                                </button>
+                                <button onClick={() => { copy(); paste(); setContextMenu(null); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><CopyPlus size={14} className="text-zinc-500 group-hover:text-white" /> Duplicate</div><span className="text-[10px] text-zinc-600 group-hover:text-white/60">Ctrl D</span>
+                                </button>
+                                <button onClick={() => { deleteSelected(); setContextMenu(null); }} className="w-full text-left px-5 py-2.5 hover:bg-red-500/10 hover:text-red-400 flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Trash2 size={14} className="text-red-500/50 group-hover:text-red-400" /> Delete</div><span className="text-[10px] text-zinc-600 group-hover:text-white/60">Del</span>
+                                </button>
+
+                                <div className="h-px bg-zinc-800 my-1"></div>
+
+                                <button onClick={() => { alignObj('center-h'); alignObj('center-v'); setContextMenu(null); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><AlignCenter size={14} className="text-zinc-500 group-hover:text-white" /> Align to page</div>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Resize Configuration opens canvas resizer window'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Frame size={14} className="text-zinc-500 group-hover:text-white" /> Resize canvas</div>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Background Locked.'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Lock size={14} className="text-zinc-500 group-hover:text-white" /> Lock</div>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Hyperlink editor active!'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><LinkIcon size={14} className="text-zinc-500 group-hover:text-white" /> Link</div>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Video/Animation timeline sequence panel triggered.'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Clock size={14} className="text-zinc-500 group-hover:text-white" /> Show element timings</div>
+                                </button>
+                                <button onClick={() => { setContextMenu(null); alert('Editing SVG Alternate Text'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center justify-between group transition-colors">
+                                    <div className="flex items-center gap-3"><Type size={14} className="text-zinc-500 group-hover:text-white" /> Alternative text</div>
+                                </button>
+
+                                <div className="h-px bg-zinc-800 my-1"></div>
+
+                                <button onClick={() => { setContextMenu(null); alert('File Info requested.'); }} className="w-full text-left px-5 py-2.5 hover:bg-violet-600 hover:text-white flex items-center gap-3 group transition-colors">
+                                    <Info size={14} className="text-zinc-500 group-hover:text-white" /> Info
+                                </button>
+                            </div>
+                        )}
                     </main>
                 </div>
 
-                <aside className="w-72 bg-[#111118] border-l border-zinc-800 flex flex-col shrink-0 overflow-y-auto">
-                    <div className="px-4 py-3.5 border-b border-zinc-800">
-                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Properties</span>
-                    </div>
-
-                    {!activeObject ? (
-                        <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">Select an element</div>
-                    ) : (
-                        <div className="p-4 space-y-6 text-sm">
-                            <div className="grid grid-cols-2 gap-2">
-                                <button onClick={copy} className="py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"><Copy size={12} />Copy</button>
-                                <button onClick={() => { copy(); paste(); }} className="py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"><Copy size={12} />Duplicate</button>
-                                <button onClick={deleteSelected} className="col-span-2 py-2 bg-red-950/40 hover:bg-red-900/50 border border-red-900/40 rounded-lg text-red-400 flex items-center justify-center gap-1.5 transition-colors text-xs font-medium"><Trash2 size={12} />Delete</button>
-                            </div>
-
-                            {(activeObject.type === 'image' || activeObject.type === 'FabricImage') && (
-                                <div className="space-y-4 pt-4 border-t border-zinc-800/80">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Image Tools</p>
-                                        <button onClick={() => {
-                                            setEditorBrightness(10);
-                                            setEditorContrast(15);
-                                            setEditorSaturation(12);
-                                            applyFilterToCanvasImage(fabricCanvasRef.current, 'Brightness', 10);
-                                            applyFilterToCanvasImage(fabricCanvasRef.current, 'Contrast', 15);
-                                            applyFilterToCanvasImage(fabricCanvasRef.current, 'Saturation', 12);
-                                        }} className="text-[10px] bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-1 rounded flex items-center gap-1 hover:bg-indigo-600 hover:text-white transition">
-                                            <Sparkles size={11} /> Auto Enhance
-                                        </button>
-                                    </div>
-
-                                    {!isCroppingEditor ? (
-                                        <button onClick={() => { setIsCroppingEditor(true); startIndependentImageCrop(fabricCanvasRef.current); }} className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 text-indigo-400 transition">
-                                            <Crop size={14} /> Crop Image
-                                        </button>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <button onClick={() => cancelIndependentCrop(fabricCanvasRef.current, () => setIsCroppingEditor(false))} className="flex-1 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded-lg text-xs font-semibold flex items-center justify-center gap-1">
-                                                <X size={13} /> Cancel
-                                            </button>
-                                            <button onClick={() => applyIndependentCrop(fabricCanvasRef.current, () => setIsCroppingEditor(false))} className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-md transition">
-                                                <Check size={13} /> Apply
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-3">
-                                        <div>
-                                            <div className="flex justify-between text-xs text-zinc-400 mb-1">
-                                                <span>Brightness</span>
-                                                <span>{editorBrightness}</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" value={editorBrightness} onChange={e => { setEditorBrightness(Number(e.target.value)); applyFilterToCanvasImage(fabricCanvasRef.current, 'Brightness', Number(e.target.value)); }} className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer" />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-xs text-zinc-400 mb-1">
-                                                <span>Contrast</span>
-                                                <span>{editorContrast}</span>
-                                            </div>
-                                            <input type="range" min="-100" max="100" value={editorContrast} onChange={e => { setEditorContrast(Number(e.target.value)); applyFilterToCanvasImage(fabricCanvasRef.current, 'Contrast', Number(e.target.value)); }} className="w-full accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer" />
-                                        </div>
-                                    </div>
-
-                                    <button onClick={handleRemoveBackgroundEditor} disabled={isRemovingBgEditor} className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 disabled:opacity-50 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 text-white shadow-md transition-all">
-                                        {isRemovingBgEditor ? <><Loader2 size={14} className="animate-spin" /> Removing Background...</> : <><Wand2 size={14} /> Remove Background (AI)</>}
-                                    </button>
-                                </div>
-                            )}
-
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Align</p>
-                                <div className="grid grid-cols-3 gap-1.5">
-                                    {[['left', <AlignLeft size={14} />], ['center-h', <AlignCenter size={14} />], ['right', <AlignRight size={14} />], ['top', <ArrowUpToLine size={14} />], ['center-v', <Minus size={14} />], ['bottom', <ArrowDownToLine size={14} />]].map(([d, icon]) => (
-                                        <button key={d as string} onClick={() => alignObj(d as string)} className="py-2 flex justify-center bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-white">{icon}</button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Opacity</p>
-                                    <span className="text-xs font-mono bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">{Math.round(getProp('opacity', 1) * 100)}%</span>
-                                </div>
-                                <input type="range" min="0" max="1" step="0.05" value={getProp('opacity', 1)} onChange={e => setProp('opacity', parseFloat(e.target.value))} className="w-full accent-indigo-500" />
-                            </div>
-
-                            {activeObject.type !== 'i-text' && activeObject.type !== 'image' && activeObject.type !== 'FabricImage' && (
-                                <div className="space-y-2">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Fill Color</p>
-                                    <input type="color" value={typeof getProp('fill', '#6366f1') === 'string' ? getProp('fill', '#6366f1') : '#6366f1'} onChange={e => setProp('fill', e.target.value)} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700" />
-                                </div>
-                            )}
-
-                            {activeObject.type === 'i-text' && (
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Typography</p>
-                                    <input type="color" value={typeof getProp('fill', '#000000') === 'string' ? getProp('fill', '#000000') : '#000000'} onChange={e => setProp('fill', e.target.value)} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700" />
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setProp('fontWeight', getProp('fontWeight', 'normal') === 'bold' ? 'normal' : 'bold')}
-                                            className={`flex-1 py-2 rounded-lg border text-xs font-bold flex items-center justify-center transition-colors ${getProp('fontWeight') === 'bold' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'}`}><Bold size={13} /></button>
-                                        <button onClick={() => setProp('fontStyle', getProp('fontStyle', 'normal') === 'italic' ? 'normal' : 'italic')}
-                                            className={`flex-1 py-2 rounded-lg border text-xs font-bold flex items-center justify-center transition-colors ${getProp('fontStyle') === 'italic' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'}`}><Italic size={13} /></button>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-xs text-zinc-400"><span>Font Size</span><span>{getProp('fontSize', 24)}px</span></div>
-                                        <input type="range" min="8" max="200" value={getProp('fontSize', 24)} onChange={e => setProp('fontSize', parseInt(e.target.value))} className="w-full accent-indigo-500" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {['rect', 'circle', 'triangle'].includes(activeObject.type ?? '') && (
-                                <div className="space-y-3 pt-4 border-t border-zinc-800/60">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Gradient Fill</p>
-                                        <span className="text-[9px] bg-pink-500/20 text-pink-400 px-1.5 py-0.5 rounded font-bold border border-pink-500/30">PRO</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <div className="flex-1"><label className="text-[9px] text-zinc-500 uppercase block mb-1">Stop 1</label><input type="color" value={gradColor1} onChange={e => setGradColor1(e.target.value)} className="w-full h-8 rounded cursor-pointer bg-transparent" /></div>
-                                        <div className="flex-1"><label className="text-[9px] text-zinc-500 uppercase block mb-1">Stop 2</label><input type="color" value={gradColor2} onChange={e => setGradColor2(e.target.value)} className="w-full h-8 rounded cursor-pointer bg-transparent" /></div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-xs text-zinc-400"><span>Angle</span><span>{gradAngle}°</span></div>
-                                        <input type="range" min="0" max="360" value={gradAngle} onChange={e => setGradAngle(parseInt(e.target.value))} className="w-full accent-pink-500" />
-                                    </div>
-                                    <button onClick={applyGradient} className="w-full py-2 bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 text-white text-xs font-bold rounded-lg transition-all">Apply Gradient</button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </aside>
+                {/* Top Toolbar Replaced Aside */}
             </div>
 
             {/* Bottom Page Bar */}

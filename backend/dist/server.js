@@ -1,11 +1,10 @@
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
-dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
@@ -20,7 +19,6 @@ app.use(cors({
     credentials: true,
 }));
 // Handle preflight requests for all routes
-app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Routes ko alag-alag theek tarike se mount kar rahe hain:

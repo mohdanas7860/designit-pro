@@ -1,0 +1,1 @@
+src/app/page.tsx(7,3): error TS2305: Module '"lucide-react"' has no exported member 'Instagram'.
