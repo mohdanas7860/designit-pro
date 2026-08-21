@@ -13,7 +13,7 @@ import {
     Frame, PanelTop, Grid, Scissors, FileText, Loader2, PlusCircle, MinusCircle,
     ChevronUp, ChevronDown, ArrowLeft, Printer, Palette, Crop, Check, RefreshCw, X,
     Wallpaper, User, Save, Cloud, MousePointer2, Monitor, Info, Lock, Unlock,
-    CopyPlus, MoreHorizontal, Clock, Link as LinkIcon
+    CopyPlus, MoreHorizontal, Clock, Link as LinkIcon, BarChart, LayoutGrid, CheckSquare, Grid3X3, Film, Music, BoxSelect
 } from 'lucide-react';
 import AuthModal from '@/components/Auth/AuthModal';
 import api from '@/lib/api';
@@ -26,6 +26,13 @@ interface PageData {
     json: any;
     backgroundColor: string;
 }
+
+export const dashTemplates = [
+    { key: 't-fashion-1', label: 'Fashion Poster', url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400' },
+    { key: 't-magazine-1', label: 'Creative Magazine', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400' },
+    { key: 't-typography-1', label: 'Typography Box', url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400' },
+    { key: 't-minimal-1', label: 'Minimal Studio', url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400' }
+];
 
 export default function CanvasEditor({ initialView = 'editor' }: { initialView?: 'editor' | 'passport-studio' }) {
     const router = useRouter();
@@ -110,6 +117,8 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const historyList = useRef<string[]>([]);
     const historyIndex = useRef<number>(-1);
+    const [canUndo, setCanUndo] = useState(false);
+    const [canRedo, setCanRedo] = useState(false);
     const isInHistory = useRef(false);
     const clipboard = useRef<any>(null);
 
@@ -119,17 +128,24 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
 
     useEffect(() => {
         const sizeParam = searchParams.get('size');
-        if (sizeParam === 'A4') { setCanvasWidth(794); setCanvasHeight(1123); }
-        else if (sizeParam === 'A3') { setCanvasWidth(1123); setCanvasHeight(1587); }
-        else if (sizeParam === 'A2') { setCanvasWidth(1587); setCanvasHeight(2245); }
-        else if (sizeParam === 'IG') { setCanvasWidth(1080); setCanvasHeight(1080); }
+        if (sizeParam === 'A4') { setCanvasWidth(794); setCanvasHeight(1123); setActivePreset('A4 Document'); }
+        else if (sizeParam === 'A3') { setCanvasWidth(1123); setCanvasHeight(1587); setActivePreset('A3 Document'); }
+        else if (sizeParam === 'A2') { setCanvasWidth(1587); setCanvasHeight(2245); setActivePreset('A2 Document'); }
+        else if (sizeParam === 'IG') { setCanvasWidth(1080); setCanvasHeight(1080); setActivePreset('Instagram Post'); }
     }, [searchParams]);
-    const [activePreset, setActivePreset] = useState('IG');
-    const [activeTab, setActiveTab] = useState('elements');
+
+    const [activePreset, setActivePreset] = useState('Instagram Post');
+    const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState(''); // Start closed, user opens what they want
+    const [activeElementsCategory, setActiveElementsCategory] = useState<string | null>(null);
     const [exportOpen, setExportOpen] = useState(false);
     const [activeObject, setActiveObject] = useState<any>(null);
     const [layers, setLayers] = useState<any[]>([]);
     const [isRemovingBgEditor, setIsRemovingBgEditor] = useState(false);
+
+    // Magic Write
+    const [isMagicWriteOpen, setIsMagicWriteOpen] = useState(false);
+    const [magicWriteText, setMagicWriteText] = useState('');
 
     // Editor Adjust & Crop
     const [editorBrightness, setEditorBrightness] = useState(0);
@@ -700,6 +716,9 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         historyList.current.push(json);
         historyIndex.current = historyList.current.length - 1;
 
+        setCanUndo(historyIndex.current > 0);
+        setCanRedo(false);
+
         if (socketRef.current && currentProjectId && !isSocketUpdate.current) {
             socketRef.current.emit('object-modified', { projectId: currentProjectId, state: c.toJSON() });
         }
@@ -720,6 +739,10 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         if (!c || historyIndex.current <= 0) return;
         isInHistory.current = true;
         historyIndex.current -= 1;
+
+        setCanUndo(historyIndex.current > 0);
+        setCanRedo(historyIndex.current < historyList.current.length - 1);
+
         c.loadFromJSON(historyList.current[historyIndex.current]).then(() => {
             c.backgroundColor = '#ffffff';
             c.renderAll();
@@ -733,6 +756,10 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         if (!c || historyIndex.current >= historyList.current.length - 1) return;
         isInHistory.current = true;
         historyIndex.current += 1;
+
+        setCanUndo(historyIndex.current > 0);
+        setCanRedo(historyIndex.current < historyList.current.length - 1);
+
         c.loadFromJSON(historyList.current[historyIndex.current]).then(() => {
             c.backgroundColor = '#ffffff';
             c.renderAll();
@@ -983,6 +1010,82 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         return () => obs.disconnect();
     }, [canvasWidth, canvasHeight, currentView]);
 
+    // ── Template Engine (JSON Hydration) ─────────────────────────────────────
+    const loadTemplate = async (templateId: string) => {
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+        c.clear();
+        c.backgroundColor = '#18181b';
+
+        try {
+            // Real Multi-Layer Template Datasets (JSON Hydration Engine)
+            const templateDatasets: Record<string, any[]> = {
+                't-fashion-1': [
+                    { type: 'image', url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080', props: { left: canvasWidth / 2, top: canvasHeight / 2, originX: 'center', originY: 'center', name: 'Background Image' }, scaleTo: 'height' },
+                    { type: 'rect', props: { left: 0, top: 0, width: canvasWidth, height: canvasHeight, fill: 'rgba(0, 0, 0, 0.4)', name: 'Overlay', selectable: false } },
+                    { type: 'text', text: 'FASHION', props: { left: canvasWidth / 2, top: 300, fontFamily: 'Inter', fontSize: 140, fontWeight: 900, fontStyle: 'italic', fill: '#ffffff', originX: 'center', textAlign: 'center', name: 'Main Title', charSpacing: 200 } },
+                    { type: 'text', text: 'NEW COLLECTION 2026', props: { left: canvasWidth / 2, top: 480, fontFamily: 'Inter', fontSize: 32, fontWeight: 'bold', fill: '#facc15', originX: 'center', name: 'Subtitle', charSpacing: 100 } },
+                    { type: 'rect', props: { left: (canvasWidth / 2) - 130, top: 600, width: 260, height: 70, fill: '#ffffff', name: 'Button BG', rx: 8, ry: 8 } },
+                    { type: 'text', text: 'SHOP NOW', props: { left: canvasWidth / 2, top: 635, originX: 'center', originY: 'center', fontSize: 24, fill: '#000000', fontWeight: 900, name: 'Button Text' } }
+                ],
+                't-magazine-1': [
+                    { type: 'rect', props: { left: 0, top: 0, width: canvasWidth, height: canvasHeight, fill: '#fdfbf7', selectable: false, name: 'Background Paper' } },
+                    { type: 'rect', props: { left: 40, top: 40, width: canvasWidth - 80, height: canvasHeight - 80, fill: 'transparent', stroke: '#1e1e1e', strokeWidth: 4, name: 'Frame', selectable: false } },
+                    { type: 'image', url: 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1080', props: { left: canvasWidth / 2, top: canvasHeight / 2 + 50, originX: 'center', originY: 'center', name: 'Editorial Photo' }, scaleTo: 'width', offsetScale: 160 },
+                    { type: 'text', text: 'C R E A T I V E', props: { left: canvasWidth / 2, top: 120, fontFamily: 'Inter', fontSize: 72, fontWeight: 800, fill: '#1e1e1e', originX: 'center', name: 'Masthead' } },
+                    { type: 'text', text: 'ISSUE NO. 42 / SPRING 26', props: { left: canvasWidth / 2, top: 220, fontFamily: 'Inter', fontSize: 18, fill: '#52525b', originX: 'center', fontWeight: 'bold', name: 'Volume Info' } }
+                ],
+                't-typography-1': [
+                    { type: 'rect', props: { left: 0, top: 0, width: canvasWidth, height: canvasHeight, fill: '#18181b', selectable: false, name: 'Background' } },
+                    { type: 'rect', props: { left: 150, top: 300, width: 400, height: 400, fill: '#fbbf24', opacity: 0.1, name: 'Accent Square' } },
+                    { type: 'text', text: 'MODERN', props: { left: 100, top: 250, fontFamily: 'Inter', fontSize: 150, fontWeight: 900, fill: '#ffffff', name: 'Bold Text 1' } },
+                    { type: 'text', text: 'TYPO.', props: { left: 100, top: 400, fontFamily: 'Inter', fontSize: 150, fontWeight: 900, fill: '#fbbf24', name: 'Bold Text 2' } },
+                    { type: 'text', text: "Explore the boundaries of geometric aesthetics\nand bold lettering in visual design.", props: { left: 110, top: 600, fontFamily: 'Inter', fontSize: 32, fill: '#a1a1aa', lineHeight: 1.4, name: 'Description' } }
+                ],
+                't-minimal-1': [
+                    { type: 'rect', props: { left: 0, top: 0, width: canvasWidth, height: canvasHeight, fill: '#ffffff', selectable: false, name: 'Background' } },
+                    { type: 'rect', props: { left: 120, top: 120, width: 5, height: 200, fill: '#000000', name: 'Vertical Line' } },
+                    { type: 'text', text: "MINIMAL\nSTUDIO", props: { left: 160, top: 150, fontFamily: 'Inter', fontSize: 80, fontWeight: 400, fill: '#000000', lineHeight: 1.1, name: 'Main Title' } },
+                    { type: 'text', text: "LESS IS ABSOLUTELY MORE", props: { left: 160, top: 380, fontFamily: 'Inter', fontSize: 18, fontWeight: 'bold', fill: '#71717a', name: 'Subheading' } },
+                    { type: 'circle', props: { left: canvasWidth / 2, top: canvasHeight - 300, radius: 100, fill: 'transparent', stroke: '#e4e4e7', strokeWidth: 2, name: 'Outline Circle' } }
+                ]
+            };
+
+            const layers = templateDatasets[templateId] || [
+                { type: 'rect', props: { left: 0, top: 0, width: canvasWidth, height: canvasHeight, fill: '#6366f1', selectable: false, name: 'Fill Background' } },
+                { type: 'text', text: `Premium Template\n${templateId}`, props: { left: canvasWidth / 2, top: canvasHeight / 2, fontFamily: 'Inter', fontSize: 60, fontWeight: 800, fill: '#ffffff', originX: 'center', originY: 'center', textAlign: 'center', name: 'Title' } }
+            ];
+
+            // Hydrate layer-by-layer parsing our datasets
+            for (const layer of layers) {
+                if (layer.type === 'image') {
+                    const img = await new Promise<any>((resolve, reject) => {
+                        (fabric as any).Image.fromURL(layer.url, (i: any) => {
+                            if (i) resolve(i);
+                            else reject();
+                        }, { crossOrigin: 'anonymous' });
+                    });
+                    img.set(layer.props);
+                    if (layer.scaleTo === 'height') img.scaleToHeight(canvasHeight);
+                    if (layer.scaleTo === 'width') img.scaleToWidth(canvasWidth - (layer.offsetScale || 0));
+                    c.add(img);
+                } else if (layer.type === 'rect') {
+                    c.add(new (fabric as any).Rect(layer.props));
+                } else if (layer.type === 'circle') {
+                    c.add(new (fabric as any).Circle(layer.props));
+                } else if (layer.type === 'text') {
+                    c.add(new (fabric as any).IText(layer.text, layer.props));
+                }
+            }
+
+            c.renderAll();
+            syncState();
+            setTimeout(() => pushHistory(), 100);
+        } catch (e) {
+            console.error('Failed to load template', e);
+        }
+    };
+
     // ── Smart Background Appliers for General Editor ─────────────────────────
     const applySmartBackground = (colorOrImgUrl: string, isImage: boolean = false) => {
         const c = fabricCanvasRef.current;
@@ -1153,9 +1256,103 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         addObj(new (fabric as any).Polygon(pts, { left: canvasWidth / 2, top: canvasHeight / 2, fill: '#f59e0b', originX: 'center', originY: 'center' }));
     };
 
-    const addHeading = () => addObj(new (fabric as any).IText('Heading Text', { left: canvasWidth / 2 - 120, top: canvasHeight / 2 - 30, fontSize: 48, fontFamily: 'Inter, sans-serif', fill: '#0f172a', fontWeight: 'bold' }));
-    const addSubheading = () => addObj(new (fabric as any).IText('Subheading', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 15, fontSize: 24, fontFamily: 'Inter, sans-serif', fill: '#334155' }));
-    const addBodyText = () => addObj(new (fabric as any).IText('Body text here...', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 10, fontSize: 16, fontFamily: 'Inter, sans-serif', fill: '#64748b' }));
+    const addHeading = () => addObj(new (fabric as any).IText('Heading Text', { left: canvasWidth / 2 - 120, top: canvasHeight / 2 - 30, fontSize: 48, fontFamily: 'Inter', fill: '#0f172a', fontWeight: 'bold' }));
+    const addSubheading = () => addObj(new (fabric as any).IText('Subheading', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 15, fontSize: 24, fontFamily: 'Inter', fill: '#334155', fontWeight: 'bold' }));
+    const addBodyText = () => addObj(new (fabric as any).IText('Body text here...', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 10, fontSize: 16, fontFamily: 'Inter', fill: '#64748b' }));
+
+    const addFontPreset = (presetKey: string) => {
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+        let objects: any[] = [];
+        const cx = (canvasWidth || 1080) / 2;
+        const cy = (canvasHeight || 1080) / 2;
+
+        switch (presetKey) {
+            case 'happy_bday':
+                objects = [
+                    new (fabric as any).IText('Happy', { left: cx, top: cy - 40, fontFamily: 'Georgia', fontSize: 90, fontStyle: 'italic', fill: '#ec4899', originX: 'center', originY: 'center', name: 'Happy' }),
+                    new (fabric as any).IText('BIRTHDAY', { left: cx, top: cy + 40, fontFamily: 'Inter', fontSize: 60, fontWeight: 900, fill: '#ffffff', originX: 'center', originY: 'center', letterSpacing: 10, name: 'Bday' })
+                ];
+                break;
+            case 'golden_hour':
+                objects = [
+                    new (fabric as any).IText('GOLDEN', { left: cx, top: cy - 35, fontFamily: 'Inter', fontSize: 80, fontWeight: 900, fill: '#f59e0b', shadow: new (fabric as any).Shadow({ color: 'rgba(245, 158, 11, 0.4)', blur: 15 }), originX: 'center', originY: 'center', name: 'Golden' }),
+                    new (fabric as any).IText('HOUR', { left: cx, top: cy + 35, fontFamily: 'Inter', fontSize: 80, fontWeight: 900, fill: '#fcd34d', shadow: new (fabric as any).Shadow({ color: 'rgba(252, 211, 77, 0.4)', blur: 15 }), originX: 'center', originY: 'center', name: 'Hour' })
+                ];
+                break;
+            case 'glow':
+                objects = [
+                    new (fabric as any).IText('GLOW', { left: cx, top: cy, fontFamily: 'Inter', fontSize: 130, fontWeight: 900, fill: '#ffffff', shadow: new (fabric as any).Shadow({ color: '#ec4899', blur: 30, offsetX: 0, offsetY: 0 }), originX: 'center', originY: 'center', name: 'Glow' })
+                ];
+                break;
+            case 'level_up':
+                objects = [
+                    new (fabric as any).IText('LEVEL', { left: cx - 25, top: cy - 45, fontFamily: 'Courier New', fontSize: 90, fontWeight: 'bold', fill: '#ef4444', originX: 'center', originY: 'center', shadow: new (fabric as any).Shadow({ color: '#000000', blur: 0, offsetX: 5, offsetY: 5 }) }),
+                    new (fabric as any).IText('UP', { left: cx + 25, top: cy + 30, fontFamily: 'Courier New', fontSize: 90, fontWeight: 'bold', fill: '#3b82f6', originX: 'center', originY: 'center', shadow: new (fabric as any).Shadow({ color: '#000000', blur: 0, offsetX: 5, offsetY: 5 }) })
+                ];
+                break;
+            case 'sweet':
+                objects = [
+                    new (fabric as any).IText('Sweet', { left: cx, top: cy - 30, fontFamily: 'Georgia', fontSize: 110, fontStyle: 'italic', fill: '#f472b6', originX: 'center', originY: 'center', shadow: new (fabric as any).Shadow({ color: 'rgba(244, 114, 182, 0.4)', blur: 20 }) }),
+                    new (fabric as any).IText('TREATS', { left: cx, top: cy + 45, fontFamily: 'Inter', fontSize: 24, fontWeight: 'bold', fill: '#ffffff', charSpacing: 300, originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'wild_sale':
+                objects = [
+                    new (fabric as any).IText('WILD', { left: cx, top: cy - 50, fontFamily: 'Inter', fontSize: 110, fontWeight: 900, fill: '#eab308', stroke: '#000000', strokeWidth: 4, originX: 'center', originY: 'center' }),
+                    new (fabric as any).IText('SALE', { left: cx, top: cy + 50, fontFamily: 'Inter', fontSize: 110, fontWeight: 900, fill: '#ef4444', stroke: '#000000', strokeWidth: 4, originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'spring_collection':
+                objects = [
+                    new (fabric as any).IText('SPRING', { left: cx, top: cy - 30, fontFamily: 'Arial', fontSize: 36, fontWeight: 'normal', fill: '#a7f3d0', charSpacing: 400, originX: 'center', originY: 'center' }),
+                    new (fabric as any).IText('COLLECTION', { left: cx, top: cy + 30, fontFamily: 'Arial', fontSize: 36, fontWeight: 'normal', fill: '#a7f3d0', charSpacing: 400, originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'hustle':
+                objects = [
+                    new (fabric as any).IText('HUSTLE', { left: cx, top: cy, fontFamily: 'Inter', fontSize: 130, fontWeight: 900, fill: '#ffffff', shadow: new (fabric as any).Shadow({ color: '#ea580c', blur: 0, offsetX: 8, offsetY: 8 }), originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'tattoo_studio':
+                objects = [
+                    new (fabric as any).IText('Tattoo', { left: cx, top: cy - 30, fontFamily: 'Georgia', fontSize: 80, fontStyle: 'italic', fill: '#ffffff', originX: 'center', originY: 'center' }),
+                    new (fabric as any).IText('STUDIO', { left: cx, top: cy + 40, fontFamily: 'Courier New', fontSize: 34, fontWeight: 'bold', fill: '#9ca3af', originX: 'center', originY: 'center', charSpacing: 200 })
+                ];
+                break;
+            case 'talk_to_us':
+                objects = [
+                    new (fabric as any).IText('TALK', { left: cx, top: cy - 40, fontFamily: 'Inter', fontSize: 70, fontWeight: 900, fill: '#3b82f6', originX: 'center', originY: 'center' }),
+                    new (fabric as any).IText('TO US', { left: cx, top: cy + 30, fontFamily: 'Inter', fontSize: 70, fontWeight: 900, fill: '#ffffff', originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'coming_soon':
+                objects = [
+                    new (fabric as any).IText('COMING SOON', { left: cx, top: cy, fontFamily: 'Courier New', fontSize: 48, fontWeight: 'bold', fill: '#14b8a6', charSpacing: 100, shadow: new (fabric as any).Shadow({ color: 'rgba(20, 184, 166, 0.5)', blur: 15 }), originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'play':
+                objects = [
+                    new (fabric as any).IText('PLAY', { left: cx, top: cy, fontFamily: 'Arial', fontSize: 130, fontWeight: 900, fill: '#a855f7', stroke: '#ffffff', strokeWidth: 3, shadow: new (fabric as any).Shadow({ color: '#3b82f6', blur: 0, offsetX: -6, offsetY: 6 }), originX: 'center', originY: 'center' })
+                ];
+                break;
+            case 'dapper':
+                objects = [
+                    new (fabric as any).IText('DAPPER', { left: cx, top: cy, fontFamily: 'Georgia', fontSize: 90, fontWeight: 'normal', fill: '#ffffff', charSpacing: 50, originX: 'center', originY: 'center' })
+                ];
+                break;
+            default:
+                break;
+        }
+
+        objects.forEach(obj => c.add(obj));
+        if (objects.length > 0) {
+            c.setActiveObject(objects[0]);
+        }
+        c.renderAll();
+        pushHistory();
+        syncState();
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -1198,6 +1395,21 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         });
     };
 
+    const addSvgGraphic = (url: string) => {
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+        (fabric as any).loadSVGFromURL(url, (objects: any, options: any) => {
+            const svgData = (fabric as any).util.groupSVGElements(objects, options);
+            svgData.scaleToWidth(Math.min(300, c.width!));
+            svgData.set({ left: c.width! / 2, top: c.height! / 2, originX: 'center', originY: 'center', name: 'Vector Graphic' });
+            addObj(svgData);
+        }, undefined, { crossOrigin: 'anonymous' });
+    };
+
+    const addSticker = (url: string) => {
+        addStockPhoto(url); // Stickers are technically transparent PNGs, so addStockPhoto logic works perfectly
+    };
+
     const stockPhotos = [
         'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400',
         'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
@@ -1207,37 +1419,151 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         'https://images.unsplash.com/photo-1520923642038-b4259acecbd7?w=400',
     ];
 
-    const loadTemplate = (type: string) => {
+    const proStickers = [
+        'https://cdn3.iconfinder.com/data/icons/social-media-black-white-2/512/YOUTUBE_icon-icons.com_71110.png',
+        'https://cdn3.iconfinder.com/data/icons/social-media-black-white-2/512/INSTAGRAM_icon-icons.com_71111.png',
+        'https://cdn3.iconfinder.com/data/icons/social-media-black-white-2/512/TIKTOK_icon-icons.com_71109.png',
+        'https://cdn3.iconfinder.com/data/icons/social-media-black-white-2/512/1-PINTEREST_icon-icons.com_71113.png',
+        'https://cdn3.iconfinder.com/data/icons/popular-services-brands/512/whatsapp-512.png',
+        'https://cdn3.iconfinder.com/data/icons/social-media-black-white-2/1024/facebook-1024.png',
+    ];
+
+    const addSvgGraphicString = async (svgString: string) => {
         const c = fabricCanvasRef.current;
         if (!c) return;
-        c.remove(...c.getObjects());
-        c.backgroundColor = '#ffffff';
-        const cx = c.width! / 2, cy = c.height! / 2;
-
-        if (type === 'sale') {
-            const bg = new (fabric as any).Rect({ left: 0, top: 0, width: c.width!, height: c.height!, selectable: false, fill: new (fabric as any).Gradient({ type: 'linear', coords: { x1: 0, y1: 0, x2: c.width!, y2: c.height! }, colorStops: [{ offset: 0, color: '#7c3aed' }, { offset: 1, color: '#db2777' }] }) });
-            const title = new (fabric as any).IText('MEGA SALE', { left: cx, top: cy - 80, originX: 'center', originY: 'center', fontSize: 72, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Inter', shadow: new (fabric as any).Shadow({ color: 'rgba(0,0,0,0.3)', blur: 10 }) });
-            const sub = new (fabric as any).IText('Up to 50% Off Everything', { left: cx, top: cy, originX: 'center', originY: 'center', fontSize: 28, fill: 'rgba(255,255,255,0.85)', fontFamily: 'Inter' });
-            const btn = new (fabric as any).Rect({ left: cx, top: cy + 80, width: 200, height: 50, rx: 25, originX: 'center', originY: 'center', fill: '#ffffff' });
-            const btnTxt = new (fabric as any).IText('SHOP NOW', { left: cx, top: cy + 80, originX: 'center', originY: 'center', fontSize: 18, fontWeight: 'bold', fill: '#7c3aed', fontFamily: 'Inter' });
-            c.add(bg, title, sub, btn, btnTxt);
-        } else if (type === 'quote') {
-            const card = new (fabric as any).Rect({ left: cx, top: cy, width: Math.min(c.width! - 80, 700), height: Math.min(c.height! - 80, 500), rx: 20, originX: 'center', originY: 'center', fill: '#1e1b4b' });
-            const q = new (fabric as any).IText('"Design is intelligence\nmade visible."', { left: cx, top: cy - 40, originX: 'center', originY: 'center', fontSize: 32, fontStyle: 'italic', fill: '#f1f5f9', fontFamily: 'Inter', textAlign: 'center' });
-            const auth = new (fabric as any).IText('— Alina Wheeler', { left: cx, top: cy + 80, originX: 'center', originY: 'center', fontSize: 18, fill: '#94a3b8', fontFamily: 'Inter' });
-            c.add(card, q, auth);
-        } else if (type === 'promo') {
-            const circle = new (fabric as any).Circle({ left: cx, top: cy, radius: Math.min(cx, cy) - 40, originX: 'center', originY: 'center', fill: '#0ea5e9', selectable: false });
-            const t1 = new (fabric as any).IText('NEW ARRIVALS', { left: cx, top: cy - 50, originX: 'center', originY: 'center', fontSize: 44, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'Inter' });
-            const t2 = new (fabric as any).IText('Summer Collection 2026', { left: cx, top: cy + 30, originX: 'center', originY: 'center', fontSize: 22, fill: '#bae6fd', fontFamily: 'Inter' });
-            c.add(circle, t1, t2);
+        try {
+            const result = await (fabric as any).loadSVGFromString(svgString);
+            const objects = result.objects;
+            const options = result.options;
+            if (!objects || !objects.length) return;
+            const svgData = (fabric as any).util.groupSVGElements(objects, options);
+            svgData.scaleToWidth(150);
+            svgData.set({ left: c.width! / 2, top: c.height! / 2, originX: 'center', originY: 'center', name: 'Vector Graphic' });
+            addObj(svgData);
+        } catch (error) {
+            console.error("Failed mounting SVG:", error);
         }
-
-        c.renderAll();
-        pushHistory();
-        syncState();
     };
 
+    const graphicsLibrary = {
+        gradients: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g1" x1="0" y1="0" x2="100" y2="100"><stop offset="0%" stop-color="#FF512F"/><stop offset="100%" stop-color="#DD2476"/></linearGradient></defs><circle cx="50" cy="50" r="50" fill="url(#g1)"/></svg>', label: 'Sunset Circle' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g2" x1="0" y1="100" x2="100" y2="0"><stop offset="0%" stop-color="#1FA2FF"/><stop offset="100%" stop-color="#12D8FA"/></linearGradient></defs><rect width="100" height="100" rx="30" fill="url(#g2)"/></svg>', label: 'Ocean Blob' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g3" x1="0" y1="50" x2="100" y2="50"><stop offset="0%" stop-color="#ff9a9e"/><stop offset="100%" stop-color="#fecfef"/></linearGradient></defs><polygon points="50,0 100,25 100,75 50,100 0,75 0,25" fill="url(#g3)"/></svg>', label: 'Pastel Gem' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><defs><linearGradient id="g4" x1="50" y1="0" x2="50" y2="100"><stop offset="0%" stop-color="#a18cd1"/><stop offset="100%" stop-color="#fbc2eb"/></linearGradient></defs><path d="M 50 0 L 100 50 L 50 100 L 0 50 Z" fill="url(#g4)"/></svg>', label: 'Dream Diamond' }
+        ],
+        social: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><rect width="100" height="100" rx="25" fill="#f09433"/><path d="M25 0h50c13.8 0 25 11.2 25 25v50c0 13.8-11.2 25-25 25H25C11.2 100 0 88.8 0 75V25C0 11.2 11.2 0 25 0zm25 24c-14.4 0-26 11.6-26 26s11.6 26 26 26 26-11.6 26-26-11.6-26-26-26zm0 43c-9.4 0-17-7.6-17-17s7.6-17 17-17 17 7.6 17 17-7.6 17-17 17zm32-43c0-3.3-2.7-6-6-6s-6 2.7-6 6 2.7 6 6 6 6-2.7 6-6z" fill="#FFF"/></svg>', label: 'Instagram' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#24A1DE"/><path d="M100 20L0 60l30 10 10 30 15-20 25 20L100 20z" fill="#FFF"/></svg>', label: 'Telegram' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#1DA1F2"/><path d="M75 35c-2 1-4 1-6 2 2-1 4-3 4-6-2 1-4 2-7 3-2-2-5-3-8-3-6 0-11 5-11 11 0 1 0 2 0 2-9 0-17-5-22-11 0 1-1 3-1 4 0 4 2 7 5 9-2 0-4-1-6-1 0 6 4 11 10 12-1 0-2 0-3 0-1 0-1 0-2 0 1 5 6 9 12 9-4 3-10 5-15 5h-3c6 4 13 6 20 6 25 0 38-20 38-38v-2c3-2 5-4 7-7z" fill="#FFF"/></svg>', label: 'Twitter' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="#5865F2"/><path d="M70 35H30c-3 0-5 2-5 5v20c0 3 2 5 5 5h40c3 0 5-2 5-5V40c0-3-2-5-5-5zM40 55a5 5 0 110-10 5 5 0 010 10zm20 0a5 5 0 110-10 5 5 0 010 10z" fill="#FFF"/></svg>', label: 'Discord' }
+        ],
+        illustrations: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M50 10A30 30 0 1 0 50 70A30 30 0 1 0 50 10ZM35 100H65V110H35Z" fill="#FCD34D"/><path d="M45 80H55V95H45Z" fill="#9CA3AF"/></svg>', label: 'Idea Bulb' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#EF4444"/><circle cx="50" cy="50" r="30" fill="#FFF"/><circle cx="50" cy="50" r="15" fill="#EF4444"/></svg>', label: 'Target' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><rect x="10" y="50" width="20" height="40" fill="#3B82F6"/><rect x="40" y="30" width="20" height="60" fill="#10B981"/><rect x="70" y="10" width="20" height="80" fill="#8B5CF6"/></svg>', label: 'Growth' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M10 90 L 90 90 M 30 90 L 30 70 M 50 90 L 50 40 M 70 90 L 70 10 M 20 70 L 40 50 L 60 60 L 90 10" stroke="#F59E0B" stroke-width="8" fill="none"/></svg>', label: 'Strategy' }
+        ],
+        bright_food: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 20 50 C 20 20 80 20 80 50 Z" fill="#F59E0B"/><path d="M 20 55 L 80 55 M 20 65 L 80 65" stroke="#10B981" stroke-width="5"/><path d="M 25 70 L 75 70 C 75 80 25 80 25 70 Z" fill="#D97706"/></svg>', label: 'Burger' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 50 20 L 10 90 L 90 90 Z" fill="#FCD34D"/><path d="M 50 20 L 10 90 L 90 90 Z" fill="none" stroke="#D97706" stroke-width="5"/><circle cx="45" cy="55" r="5" fill="#EF4444"/><circle cx="55" cy="70" r="5" fill="#EF4444"/></svg>', label: 'Pizza' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 50 10 A 40 40 0 1 0 50 90 A 40 40 0 1 0 50 10 Z M 50 35 A 15 15 0 1 0 50 65 A 15 15 0 1 0 50 35 Z" fill="#F472B6"/><circle cx="30" cy="50" r="3" fill="#FFF"/><circle cx="70" cy="50" r="3" fill="#FFF"/><circle cx="50" cy="20" r="3" fill="#FFF"/></svg>', label: 'Donut' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 30 40 A 20 20 0 1 1 70 40 A 20 20 0 1 1 30 40" fill="#6EE7B7"/><path d="M 30 45 L 50 90 L 70 45" fill="#D97706"/></svg>', label: 'Ice Cream' }
+        ],
+        pastel_travel: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 10 50 L 40 40 L 60 10 L 70 10 L 65 40 L 90 40 C 95 40 100 45 100 50 C 100 55 95 60 90 60 L 65 60 L 70 90 L 60 90 L 40 60 L 10 50 Z" fill="#3B82F6"/></svg>', label: 'Plane' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 20 20 L 80 20 L 80 90 L 20 90 Z" fill="#10B981"/><path d="M 30 20 L 70 20 L 70 10 L 30 10 Z" fill="#059669"/><path d="M 40 20 L 40 90 M 60 20 L 60 90" stroke="#047857" stroke-width="4"/></svg>', label: 'Luggage' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 50 10 C 20 10 20 50 50 90 C 80 50 80 10 50 10 Z" fill="#EF4444"/><circle cx="50" cy="40" r="15" fill="#FFF"/></svg>', label: 'Pin' }
+        ],
+        organic_summer: [
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="25" fill="#FBBF24"/><path d="M 50 0 L 50 15 M 50 100 L 50 85 M 0 50 L 15 50 M 100 50 L 85 50 M 15 15 L 25 25 M 85 85 L 75 75 M 85 15 L 75 25 M 15 85 L 25 75" stroke="#FBBF24" stroke-width="8" stroke-linecap="round"/></svg>', label: 'Sun' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 50 100 Q 40 60 50 20" stroke="#8B5CF6" fill="none" stroke-width="8"/><path d="M 50 30 Q 30 50 10 50M 50 30 Q 70 50 90 50M 50 20 Q 20 20 20 0M 50 20 Q 80 20 80 0" stroke="#10B981" fill="none" stroke-width="12" stroke-linecap="round"/></svg>', label: 'Palm Tree' },
+            { type: 'svg', svg: '<svg viewBox="0 0 100 100"><path d="M 10 30 L 90 30 C 90 80 50 100 50 100 C 50 100 10 80 10 30 Z" fill="#EF4444"/><path d="M 30 50 A 5 5 0 1 0 30 51 M 50 60 A 5 5 0 1 0 50 61 M 70 50 A 5 5 0 1 0 70 51" stroke="#000" stroke-width="6" stroke-linecap="round"/></svg>', label: 'Watermelon' }
+        ]
+    };
+
+    const addPathShape = (pathDef: string, customScale = 1) => {
+        const c = fabricCanvasRef.current;
+        if (!c) return;
+        try {
+            const path = new (fabric as any).Path(pathDef, {
+                left: c.width! / 2,
+                top: c.height! / 2,
+                originX: 'center',
+                originY: 'center',
+                fill: '#6366f1',
+            });
+            path.scaleToWidth(120 * customScale);
+            addObj(path);
+        } catch (e) {
+            console.error('Failed to parse path', e);
+        }
+    };
+
+    const shapeLibrary = {
+        lines: [
+            { type: 'path', path: 'M 0 50 L 100 50', label: 'Solid', scale: 2 },
+            { type: 'path', path: 'M 0 50 L 100 50', label: 'Dashed', strokeDashArray: [5, 5], scale: 2 },
+            { type: 'path', path: 'M 0 50 L 100 50', label: 'Dotted', strokeDashArray: [2, 2], scale: 2 },
+            { type: 'path', path: 'M 0 50 L 80 50 L 80 40 L 100 55 L 80 70 L 80 60 L 0 60 Z', label: 'Arrowhead', scale: 2 },
+            { type: 'path', path: 'M 20 40 L 20 50 L 80 50 L 80 40 L 100 55 L 80 70 L 80 60 L 20 60 L 20 70 L 0 55 Z', label: 'Double', scale: 2 }
+        ],
+        basic: [
+            { type: 'polygon', points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }], label: 'Square' },
+            { type: 'path', path: 'M 20 0 L 80 0 C 91 0 100 9 100 20 L 100 80 C 100 91 91 100 80 100 L 20 100 C 9 100 0 91 0 80 L 0 20 C 0 9 9 0 20 0 Z', label: 'Rounded' },
+            { type: 'path', path: 'M 50 0 A 50 50 0 1 1 49.9 0 Z', label: 'Circle' },
+            { type: 'polygon', points: [{ x: 50, y: 0 }, { x: 100, y: 100 }, { x: 0, y: 100 }], label: 'Triangle' },
+            { type: 'polygon', points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 50, y: 100 }], label: 'Inverted' }
+        ],
+        polygons: [
+            { type: 'polygon', points: [{ x: 50, y: 0 }, { x: 100, y: 38 }, { x: 81, y: 100 }, { x: 19, y: 100 }, { x: 0, y: 38 }], label: 'Pentagon' },
+            { type: 'polygon', points: [{ x: 50, y: 0 }, { x: 100, y: 25 }, { x: 100, y: 75 }, { x: 50, y: 100 }, { x: 0, y: 75 }, { x: 0, y: 25 }], label: 'Hexagon' },
+            { type: 'polygon', points: [{ x: 50, y: 0 }, { x: 89, y: 19 }, { x: 99, y: 61 }, { x: 72, y: 97 }, { x: 28, y: 97 }, { x: 1, y: 61 }, { x: 11, y: 19 }], label: 'Heptagon' },
+            { type: 'polygon', points: [{ x: 30, y: 0 }, { x: 70, y: 0 }, { x: 100, y: 30 }, { x: 100, y: 70 }, { x: 70, y: 100 }, { x: 30, y: 100 }, { x: 0, y: 70 }, { x: 0, y: 30 }], label: 'Octagon' }
+        ],
+        stars: [
+            { type: 'path', path: 'M 50 0 L 65 35 L 100 50 L 65 65 L 50 100 L 35 65 L 0 50 L 35 35 Z', label: '4-Point' },
+            { type: 'path', path: 'M 50 0 L 61 35 L 98 35 L 68 57 L 79 91 L 50 70 L 21 91 L 32 57 L 2 35 L 39 35 Z', label: '5-Point' },
+            { type: 'path', path: 'M 50 0 L 64 25 L 93 25 L 79 50 L 93 75 L 64 75 L 50 100 L 36 75 L 7 75 L 21 50 L 7 25 L 36 25 Z', label: '6-Point' },
+            { type: 'path', path: 'M 50 0 L 59 25 L 85 15 L 75 41 L 100 50 L 75 59 L 85 85 L 59 75 L 50 100 L 41 75 L 15 85 L 25 59 L 0 50 L 25 41 L 15 15 L 41 25 Z', label: '8-Point' }
+        ],
+        arrows: [
+            { type: 'polygon', points: [{ x: 0, y: 35 }, { x: 60, y: 35 }, { x: 60, y: 15 }, { x: 100, y: 50 }, { x: 60, y: 85 }, { x: 60, y: 65 }, { x: 0, y: 65 }], label: 'Right' },
+            { type: 'polygon', points: [{ x: 100, y: 35 }, { x: 40, y: 35 }, { x: 40, y: 15 }, { x: 0, y: 50 }, { x: 40, y: 85 }, { x: 40, y: 65 }, { x: 100, y: 65 }], label: 'Left' },
+            { type: 'polygon', points: [{ x: 35, y: 100 }, { x: 35, y: 40 }, { x: 15, y: 40 }, { x: 50, y: 0 }, { x: 85, y: 40 }, { x: 65, y: 40 }, { x: 65, y: 100 }], label: 'Up' },
+            { type: 'polygon', points: [{ x: 35, y: 0 }, { x: 35, y: 60 }, { x: 15, y: 60 }, { x: 50, y: 100 }, { x: 85, y: 60 }, { x: 65, y: 60 }, { x: 65, y: 0 }], label: 'Down' },
+            { type: 'polygon', points: [{ x: 25, y: 35 }, { x: 0, y: 50 }, { x: 25, y: 65 }, { x: 25, y: 45 }, { x: 75, y: 45 }, { x: 75, y: 65 }, { x: 100, y: 50 }, { x: 75, y: 35 }, { x: 75, y: 55 }, { x: 25, y: 55 }], label: 'Db-Horiz' }
+        ],
+        flowchart: [
+            { type: 'polygon', points: [{ x: 0, y: 15 }, { x: 100, y: 15 }, { x: 100, y: 85 }, { x: 0, y: 85 }], label: 'Process' },
+            { type: 'path', path: 'M 20 15 L 80 15 C 91 15 100 24 100 50 C 100 76 91 85 80 85 L 20 85 C 9 85 0 76 0 50 C 0 24 9 15 20 15 Z', label: 'Terminator' },
+            { type: 'polygon', points: [{ x: 50, y: 0 }, { x: 100, y: 50 }, { x: 50, y: 100 }, { x: 0, y: 50 }], label: 'Decision' },
+            { type: 'polygon', points: [{ x: 20, y: 15 }, { x: 100, y: 15 }, { x: 80, y: 85 }, { x: 0, y: 85 }], label: 'Data Box' }
+        ],
+        bubbles: [
+            { type: 'polygon', points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 70 }, { x: 40, y: 70 }, { x: 10, y: 100 }, { x: 20, y: 70 }, { x: 0, y: 70 }], label: 'Rect Chat' },
+            { type: 'path', path: 'M 20 0 L 80 0 C 91 0 100 9 100 20 L 100 60 C 100 71 91 80 80 80 L 40 80 L 10 100 L 20 80 C 9 80 0 71 0 60 L 0 20 C 0 9 9 0 20 0 Z', label: 'Rounded' },
+            { type: 'path', path: 'M 50 100 C 22.4 100 0 81.3 0 58.3 C 0 49.3 3.6 41 9.5 34 C 8.6 15.6 23.9 0 42.9 0 C 56.6 0 68.6 8.5 74.2 20.8 C 89.2 21.6 101.4 34 101.4 49.3 C 101.4 69.3 80.9 90.7 50 100 M 10 90 A 5 5 0 1 1 10 89.9 M 20 100 A 3 3 0 1 1 20 99.9', label: 'Thought' },
+            { type: 'path', path: 'M 10 20 L 90 20 L 90 70 L 30 70 L 10 50 Z', label: 'Pointed' }
+        ],
+        clouds: [
+            { type: 'path', path: 'M 30 90 C 10 90 0 75 0 60 C 0 45 15 35 25 40 C 28 20 50 10 70 25 C 90 15 100 35 100 55 C 100 80 80 90 60 90 Z', label: 'Fluffy 1' },
+            { type: 'path', path: 'M 20 80 C 5 80 0 60 10 50 C 5 30 25 15 45 25 C 55 5 85 10 95 30 C 105 50 95 80 75 80 Z', label: 'Fluffy 2' },
+            { type: 'path', path: 'M 25 75 C 10 75 5 60 15 50 C 5 35 20 20 40 25 C 50 5 80 15 85 40 C 100 45 95 75 75 75 Z', label: 'Weather' }
+        ],
+        hearts_banners: [
+            { type: 'path', path: 'M 50 100 C 50 100 0 65 0 30 C 0 13 13 0 30 0 C 40 0 47 5 50 12 C 53 5 60 0 70 0 C 87 0 100 13 100 30 C 100 65 50 100 50 100 Z', label: 'Heart' },
+            { type: 'polygon', points: [{ x: 0, y: 20 }, { x: 100, y: 20 }, { x: 100, y: 80 }, { x: 0, y: 80 }, { x: 15, y: 50 }], label: 'Ribbon L' },
+            { type: 'polygon', points: [{ x: 100, y: 20 }, { x: 0, y: 20 }, { x: 0, y: 80 }, { x: 100, y: 80 }, { x: 85, y: 50 }], label: 'Ribbon R' },
+            { type: 'path', path: 'M 50 0 C 50 0 0 40 0 70 C 0 87 13 100 30 100 C 47 100 50 85 50 85 C 50 85 53 100 70 100 C 87 100 100 87 100 70 C 100 40 50 0 50 0 Z', label: 'Teardrop' }
+        ],
+        cogs_abstract: [
+            { type: 'path', path: 'M 50 15 A 35 35 0 1 1 49.9 15 M 50 0 L 60 10 L 70 5 L 75 15 L 85 15 L 85 25 L 95 30 L 90 40 L 100 50 L 90 60 L 95 70 L 85 75 L 85 85 L 75 85 L 70 95 L 60 90 L 50 100 L 40 90 L 30 95 L 25 85 L 15 85 L 15 75 L 5 70 L 10 60 L 0 50 L 10 40 L 5 30 L 15 25 L 15 15 L 25 15 L 30 5 L 40 10 Z', label: 'Cog' },
+            { type: 'polygon', points: [{ x: 40, y: 0 }, { x: 60, y: 0 }, { x: 60, y: 40 }, { x: 100, y: 40 }, { x: 100, y: 60 }, { x: 60, y: 60 }, { x: 60, y: 100 }, { x: 40, y: 100 }, { x: 40, y: 60 }, { x: 0, y: 60 }, { x: 0, y: 40 }, { x: 40, y: 40 }], label: 'Cross' },
+            { type: 'path', path: 'M 50 0 C 70 0 75 25 100 25 C 100 45 75 50 75 75 C 55 75 50 100 25 100 C 25 80 50 75 50 50 C 30 50 25 25 0 25 C 0 5 25 0 25 25 C 45 25 50 0 50 0 Z', label: 'Flower' },
+            { type: 'path', path: 'M 50 0 L 61 7 L 74 2 L 79 14 L 92 14 L 92 27 L 103 35 L 94 45 L 100 57 L 88 64 L 88 77 L 75 79 L 68 91 L 56 86 L 46 96 L 36 86 L 24 91 L 17 79 L 4 77 L 4 64 L -8 57 L -2 45 L -11 35 L 0 27 L 0 14 L 13 14 L 18 2 L 31 7 Z', label: 'Badge' }
+        ]
+    };
     const setProp = (prop: string, val: any) => {
         const c = fabricCanvasRef.current;
         const obj = c?.getActiveObject();
@@ -1343,11 +1669,6 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         { label: 'A4 Document', sub: '1240 × 1754', key: 'A4', w: 1240, h: 1754, icon: '📄', color: 'from-blue-600 to-cyan-500' },
         { label: 'Poster', sub: '800 × 1200', key: 'Poster', w: 800, h: 1200, icon: '🖼️', color: 'from-emerald-600 to-teal-500' },
         { label: 'Presentation', sub: '1920 × 1080', key: 'Pres', w: 1920, h: 1080, icon: '💼', color: 'from-amber-600 to-yellow-500' },
-    ];
-    const dashTemplates = [
-        { key: 'sale', label: 'Sale Banner', thumb: 'from-purple-600 to-pink-600', icon: '🛍️' },
-        { key: 'quote', label: 'Quote Card', thumb: 'from-slate-800 to-slate-600', icon: '💬' },
-        { key: 'promo', label: 'Social Promo', thumb: 'from-sky-500 to-blue-600', icon: '✨' },
     ];
 
     // =========================================================================
@@ -1653,198 +1974,38 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                     ))}
                 </div>
 
-                <aside className="w-72 bg-[#121216] border-r border-[#1e1e24] flex flex-col shrink-0 overflow-y-auto">
-                    <div className="p-3 border-b border-[#1e1e24]">
-                        <div className="relative">
-                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                            <input
-                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                placeholder={`Search ${sidebarTabs.find(t => t.id === activeTab)?.label ?? ''}…`}
-                                className="w-full bg-[#1a1a22] border border-[#262633] rounded-lg pl-8 pr-3 py-2 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-indigo-500/60 transition-colors"
-                            />
-                        </div>
+                <aside className="w-[340px] bg-[#14141B] border-r border-zinc-800/80 flex flex-col shrink-0 overflow-y-auto relative z-30 shadow-2xl">
+                    <div className="p-4 border-b border-zinc-800/60 bg-[#14141B]/95 backdrop-blur z-10 sticky top-0">
+                        <h3 className="text-[15px] font-extrabold text-white mb-3 tracking-wide flex items-center justify-between">
+                            <span className="capitalize">{activeTab}</span>
+                            {activeTab === 'brand' && <span className="text-[9px] bg-yellow-500 text-yellow-950 px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Pro</span>}
+                        </h3>
+                        {['templates', 'elements', 'projects', 'apps', 'uploads', 'text'].includes(activeTab) && (
+                            <div className="relative group">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                                <input
+                                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                    placeholder={activeTab === 'text' ? 'Search fonts and combinations' : `Search ${activeTab}…`}
+                                    className="w-full bg-[#1e1e26] border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/50 transition-all font-medium"
+                                />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="p-3 flex-1 overflow-y-auto space-y-4">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-6">
                         {/* TEMPLATES */}
                         {activeTab === 'templates' && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400', n: 'Social Post' },
-                                        { url: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400', n: 'Presentation' },
-                                        { url: 'https://images.unsplash.com/photo-1588190438148-5c4bb8934524?w=400', n: 'Menu' },
-                                        { url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400', n: 'Gradient' },
-                                        { url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=400', n: 'Modern Art' },
-                                        { url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400', n: 'Minimal' }
-                                    ].map((t, i) => (
-                                        <button key={i} onClick={() => alert('Feature coming soon: Dynamic Hydration from Sidebar')} className="relative aspect-[3/4] bg-zinc-900 rounded-xl overflow-hidden group border border-zinc-700 hover:border-indigo-500 transition-all">
-                                            <img src={t.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt={t.n} loading="lazy" />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                                                <span className="text-[10px] font-bold text-white tracking-wide">{t.n}</span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ELEMENTS */}
-                        {activeTab === 'elements' && (
-                            <>
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest px-1">Basic Shapes</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {[
-                                        { label: 'Rectangle', icon: <Square size={28} className="text-white/80" />, action: addRect },
-                                        { label: 'Circle', icon: <CircleIcon size={28} className="text-white/80" />, action: addCircle },
-                                        { label: 'Triangle', icon: <TriangleIcon size={28} className="text-white/80" />, action: addTriangle },
-                                        { label: 'Line', icon: <Minus size={28} className="text-white/80" />, action: addLine },
-                                        { label: 'Star', icon: <Star size={28} className="text-white/80" />, action: addStar },
-                                        { label: 'Frame', icon: <Frame size={28} className="text-white/80" />, action: addCircle },
-                                    ].map(({ label, icon, action }) => (
-                                        <button key={label} onClick={action}
-                                            className="bg-[#1a1a22] border border-[#262633] hover:border-indigo-500/60 rounded-xl p-4 flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#1e1e2e] group">
-                                            <div className="opacity-80 group-hover:opacity-100 transition-opacity">{icon}</div>
-                                            <span className="text-[10px] text-zinc-500 group-hover:text-zinc-300 transition-colors">{label}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
-
-                        {/* TEXT */}
-                        {activeTab === 'text' && (
-                            <div className="space-y-2">
-                                <button onClick={addHeading} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl font-bold text-lg text-zinc-100 transition-colors">Add Heading</button>
-                                <button onClick={addSubheading} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl font-medium text-sm text-zinc-300 transition-colors">Add Subheading</button>
-                                <button onClick={addBodyText} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl text-xs text-zinc-400 transition-colors">Add Body Text</button>
-                            </div>
-                        )}
-
-                        {/* UPLOADS */}
-                        {activeTab === 'uploads' && (
-                            <div className="space-y-4">
-                                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                <button onClick={() => fileInputRef.current?.click()}
-                                    className="w-full py-4 border-2 border-dashed border-zinc-700 hover:border-indigo-500 rounded-xl flex flex-col items-center gap-2 text-zinc-400 hover:text-indigo-400 transition-colors bg-zinc-900/50">
-                                    <ImagePlus size={22} />
-                                    <span className="text-xs font-medium">Upload Image</span>
-                                </button>
-                                <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Stock Photos</p>
-                                <div className="grid grid-cols-2 gap-1.5">
-                                    {stockPhotos.map((url, i) => (
-                                        <button key={i} onClick={() => addStockPhoto(url)}
-                                            className="aspect-video rounded-lg overflow-hidden border border-zinc-700 hover:border-indigo-400 transition-colors">
-                                            <img src={url} alt="stock" className="w-full h-full object-cover" loading="lazy" />
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* BRAND KIT */}
-                        {activeTab === 'brand' && (
-                            <div className="space-y-4 flex flex-col items-center text-center py-10 px-2 animate-in fade-in zoom-in-95">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center p-0.5 mb-2 shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-                                    <div className="w-full h-full bg-[#121216] rounded-full flex items-center justify-center">
-                                        <Palette size={24} className="text-indigo-400" />
-                                    </div>
-                                </div>
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
                                 <div>
-                                    <h4 className="text-sm font-bold text-white mb-2 flex items-center justify-center gap-2">Brand Kit <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 text-[9px] uppercase font-black rounded border border-yellow-500/20 tracking-wider">Pro</span></h4>
-                                    <p className="text-xs text-zinc-400 leading-relaxed max-w-[200px] mx-auto">Lock in your team's visual identity. Upload custom logos, fonts, and hex palettes.</p>
-                                </div>
-                                <button className="w-full mt-2 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl text-xs font-bold text-white transition-all shadow-md">Set up Brand Kit</button>
-                            </div>
-                        )}
-
-                        {/* PRO TOOLS */}
-                        {activeTab === 'tools' && (
-                            <div className="space-y-4 py-2 animate-in fade-in slide-in-from-bottom-4">
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Magic Studio</p>
-                                <button disabled className="w-full p-4 bg-gradient-to-r from-purple-500/10 to-indigo-500/10 hover:from-purple-500/20 hover:to-indigo-500/20 border border-indigo-500/20 rounded-2xl flex flex-col items-center gap-2 transition-all opacity-80 cursor-not-allowed group text-center">
-                                    <Wand2 size={24} className="text-purple-400 group-hover:scale-110 transition-transform" />
-                                    <div>
-                                        <h4 className="text-xs font-bold text-indigo-300">Magic Write</h4>
-                                        <p className="text-[10px] text-zinc-400 mt-1">Generate text with AI</p>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <h4 className="text-xs font-bold text-zinc-300">Professional Templates</h4>
                                     </div>
-                                </button>
-                                <button disabled className="w-full p-4 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center gap-3 opacity-60 cursor-not-allowed transition-all">
-                                    <div className="p-2 bg-zinc-800 rounded-lg text-emerald-400"><LayersIcon size={16} /></div>
-                                    <div className="text-left"><h4 className="text-xs font-bold text-zinc-300">Magic Morph</h4><span className="text-[10px] text-zinc-500">Transform typography</span></div>
-                                </button>
-                            </div>
-                        )}
-
-                        {/* PROJECTS */}
-                        {activeTab === 'projects' && (
-                            <div className="space-y-4 py-8 text-center px-4 animate-in fade-in">
-                                <LayersIcon size={32} className="mx-auto text-zinc-600 mb-3" />
-                                <h4 className="text-sm font-bold text-white mb-1">Your Projects</h4>
-                                <p className="text-xs text-zinc-500 mb-6 leading-relaxed">Search your folders, previous designs, and imported assets.</p>
-                                <div className="text-left space-y-2">
-                                    <button className="w-full p-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl flex items-center gap-3 transition-colors">
-                                        <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400"><Plus size={14} /></div>
-                                        <span className="text-xs font-semibold text-zinc-300">Create new folder</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* APPS */}
-                        {activeTab === 'apps' && (
-                            <div className="space-y-4 py-4 animate-in fade-in slide-in-from-right-4">
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-1">Integrations</p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { n: 'Typecraft', c: 'bg-orange-500' },
-                                        { n: 'Mockups', c: 'bg-emerald-500' },
-                                        { n: 'QR Code', c: 'bg-zinc-700' },
-                                        { n: 'Drive', c: 'bg-blue-600' }
-                                    ].map((a, i) => (
-                                        <button key={i} className="aspect-square bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all">
-                                            <div className={`w-8 h-8 rounded-lg ${a.c} flex items-center justify-center text-white font-bold text-sm shadow-lg`}>{a.n[0]}</div>
-                                            <span className="text-[10px] font-bold text-zinc-400">{a.n}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* BACKGROUND TAB */}
-                        {activeTab === 'background' && (
-                            <div className="space-y-5">
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Solid Colors</span>
-                                        <span className="text-[9px] text-zinc-500">
-                                            {activeObject?.type === 'image' || activeObject?.type === 'FabricImage' ? 'Target: Selected Image' : 'Target: Page Canvas'}
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-6 gap-2">
-                                        {bgColorsList.map((color, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => applySmartBackground(color, false)}
-                                                style={{ backgroundColor: color }}
-                                                className="w-8 h-8 rounded-lg border border-zinc-700 hover:scale-110 hover:border-indigo-400 transition-all shadow-sm"
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Studio & Aesthetic Textures</span>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {bgStockWallpapers.map((url, i) => (
-                                            <button
-                                                key={i}
-                                                onClick={() => applySmartBackground(url, true)}
-                                                className="aspect-[4/3] rounded-xl overflow-hidden border border-zinc-700 hover:border-indigo-400 hover:scale-[1.03] transition-all relative group"
-                                            >
-                                                <img src={url} alt="wallpaper" className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                                    <span className="text-[10px] font-bold text-white bg-indigo-600/80 px-2 py-0.5 rounded-full">Apply</span>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {dashTemplates.map((t, i) => (
+                                            <button key={i} onClick={() => loadTemplate(t.key)} className="relative aspect-[3/4] bg-[#1e1e26] rounded-xl overflow-hidden group border border-zinc-800 hover:border-indigo-500 transition-all shadow-sm">
+                                                <img src={t.url} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-105 duration-500" alt={t.label} loading="lazy" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent flex items-end p-3 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <span className="text-[11px] font-bold text-white tracking-wider truncate">{t.label}</span>
                                                 </div>
                                             </button>
                                         ))}
@@ -1853,34 +2014,525 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                             </div>
                         )}
 
-                        {/* TEMPLATES */}
-                        {activeTab === 'templates' && (
-                            <div className="space-y-2">
-                                {dashTemplates.map(t => (
-                                    <button key={t.key} onClick={() => loadTemplate(t.key)}
-                                        className={`w-full h-20 rounded-xl bg-gradient-to-br ${t.thumb} flex items-center justify-center space-x-2 border border-white/10 hover:border-indigo-400/50 transition-all hover:scale-[1.01]`}>
-                                        <span className="text-xl">{t.icon}</span>
-                                        <span className="font-semibold text-white text-sm">{t.label}</span>
+                        {/* ELEMENTS */}
+                        {activeTab === 'elements' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300 relative">
+                                {!activeElementsCategory ? (
+                                    <>
+                                        {/* Recommended For You */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h4 className="text-xs font-bold text-zinc-300">Recommended for you</h4>
+                                                <button className="text-[10px] font-bold text-zinc-500 hover:text-white transition">See All</button>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <button onClick={() => addStockPhoto('https://images.unsplash.com/photo-1542314831-c5a4d407e997?w=400')} className="aspect-square bg-[#1e1e26] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative">
+                                                    <img src="https://images.unsplash.com/photo-1542314831-c5a4d407e997?w=400" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" alt="Rec" />
+                                                </button>
+                                                <button onClick={addStar} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
+                                                    <Star size={32} className="text-amber-400 group-hover:scale-110 transition-transform" fill="currentColor" />
+                                                </button>
+                                                <button onClick={() => addStockPhoto('https://images.unsplash.com/photo-1618220179428-22790b461013?w=400')} className="aspect-square bg-[#1e1e26] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative">
+                                                    <img src="https://images.unsplash.com/photo-1618220179428-22790b461013?w=400" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" alt="Rec" />
+                                                </button>
+                                                <button onClick={addCircle} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
+                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-indigo-500 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20" />
+                                                </button>
+                                                <button onClick={() => addStockPhoto('https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400')} className="aspect-square bg-[#1e1e26] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative">
+                                                    <img src="https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" alt="Rec" />
+                                                </button>
+                                                <button onClick={addRect} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
+                                                    <div className="w-10 h-10 rounded-2xl bg-zinc-700 border-2 border-zinc-500 group-hover:scale-110 transition-transform" />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Browse Categories */}
+                                        <div>
+                                            <h4 className="text-xs font-bold text-zinc-300 mb-3">Browse categories</h4>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {[
+                                                    { id: 'shapes', label: 'Shapes', icon: <Square size={22} className="text-blue-400" fill="currentColor" opacity={0.2} /> },
+                                                    { id: 'graphics', label: 'Graphics', icon: <Sparkles size={22} className="text-amber-400" /> },
+                                                    { id: 'stickers', label: 'Stickers', icon: <Info size={22} className="text-emerald-400" /> },
+                                                    { id: 'photos', label: 'Photos', icon: <ImageIcon size={22} className="text-rose-400" /> },
+                                                    { id: 'videos', label: 'Videos', icon: <Film size={22} className="text-indigo-400" /> },
+                                                    { id: 'audio', label: 'Audio', icon: <Music size={22} className="text-purple-400" /> },
+                                                    { id: 'animations', label: 'Animations', icon: <LayersIcon size={22} className="text-pink-400" /> },
+                                                    { id: 'charts', label: 'Charts', icon: <BarChart size={22} className="text-green-400" /> },
+                                                    { id: 'forms', label: 'Forms', icon: <CheckSquare size={22} className="text-teal-400" /> },
+                                                    { id: 'tables', label: 'Tables', icon: <LayoutGrid size={22} className="text-sky-400" /> },
+                                                    { id: 'frames', label: 'Frames', icon: <BoxSelect size={22} className="text-fuchsia-400" /> },
+                                                    { id: 'grids', label: 'Grids', icon: <Grid3X3 size={22} className="text-violet-400" /> },
+                                                ].map(cat => (
+                                                    <button key={cat.id} onClick={() => setActiveElementsCategory(cat.id)} className="bg-[#1e1e26] border border-zinc-800/80 hover:border-indigo-500 hover:bg-[#252530] rounded-xl p-4 flex flex-col items-center justify-center gap-3 transition-all group shadow-sm">
+                                                        <div className="w-12 h-12 rounded-full border border-zinc-700/50 bg-[#17171e] group-hover:bg-[#1f1f2a] flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                            {cat.icon}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-zinc-300">{cat.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <button onClick={() => setActiveElementsCategory(null)} className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 hover:text-white mb-4 transition-colors">
+                                            <ArrowLeft size={14} /> Back to Elements
+                                        </button>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="text-sm font-bold text-white capitalize">{activeElementsCategory}</h4>
+                                        </div>
+
+                                        {activeElementsCategory === 'shapes' && (
+                                            <div className="space-y-6 pb-20">
+                                                {Object.entries(shapeLibrary).map(([category, shapes]) => (
+                                                    <div key={category}>
+                                                        <h4 className="text-xs font-bold text-zinc-300 capitalize mb-3 border-b border-zinc-800 pb-2 flex justify-between">
+                                                            {category} <span className="text-[9px] text-zinc-500 font-normal hover:text-white cursor-pointer transition">See all</span>
+                                                        </h4>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {shapes.map((shape, i) => {
+                                                                const sPoints = (shape as any).points;
+                                                                const sPath = (shape as any).path;
+                                                                const sDash = (shape as any).strokeDashArray;
+                                                                const sScale = (shape as any).scale || 1.5;
+                                                                return (
+                                                                    <button key={i} onClick={() => {
+                                                                        if (shape.type === 'polygon' && sPoints) {
+                                                                            const poly = new (fabric as any).Polygon(sPoints, { left: 540, top: 540, fill: '#6366f1', originX: 'center', originY: 'center' });
+                                                                            poly.scaleToWidth(120);
+                                                                            addObj(poly);
+                                                                        } else if (shape.type === 'path' && sPath) {
+                                                                            addPathShape(sPath, sScale);
+                                                                        }
+                                                                    }} className="bg-[#1e1e26] border border-zinc-800 hover:border-indigo-500/50 rounded-xl py-3 flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633] group overflow-hidden">
+                                                                        <div className="text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all flex items-center justify-center h-8 w-8">
+                                                                            <svg viewBox="-5 -5 110 110" className="w-full h-full fill-current">
+                                                                                {shape.type === 'polygon' ? (
+                                                                                    <polygon points={sPoints?.map((p: any) => `${p.x},${p.y}`).join(' ')} />
+                                                                                ) : (
+                                                                                    <path d={sPath} stroke={category === 'lines' ? "currentColor" : "none"} strokeWidth={category === 'lines' ? "8" : "0"} fill={category === 'lines' ? "none" : "currentColor"} strokeDasharray={sDash ? sDash.join(',') : 'none'} strokeLinecap={category === 'lines' ? "round" : "butt"} />
+                                                                                )}
+                                                                            </svg>
+                                                                        </div>
+                                                                        <span className="text-[9px] font-semibold text-zinc-500 group-hover:text-zinc-300 text-center">{shape.label}</span>
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {activeElementsCategory === 'photos' && (
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                                {stockPhotos.map((url, i) => (
+                                                    <button key={i} onClick={() => addStockPhoto(url)} className="aspect-square rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 transition-all group">
+                                                        <img src={url} alt="stock" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {activeElementsCategory === 'graphics' && (
+                                            <div className="space-y-6 pb-20">
+                                                {Object.entries(graphicsLibrary).map(([category, items]) => (
+                                                    <div key={category}>
+                                                        <h4 className="text-xs font-bold text-zinc-300 capitalize mb-3 border-b border-zinc-800 pb-2 flex justify-between">
+                                                            {category.replace('_', ' ')} <span className="text-[9px] text-zinc-500 font-normal hover:text-white cursor-pointer transition">See all</span>
+                                                        </h4>
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            {items.map((item, i) => {
+                                                                return (
+                                                                    <button key={i} onClick={() => {
+                                                                        if (item.type === 'image' && (item as any).url) {
+                                                                            addStockPhoto((item as any).url);
+                                                                        } else if (item.type === 'path' && (item as any).path) {
+                                                                            addPathShape((item as any).path, (item as any).scale || 1.5);
+                                                                        } else if (item.type === 'svg' && (item as any).svg) {
+                                                                            addSvgGraphicString((item as any).svg);
+                                                                        }
+                                                                    }} className="bg-[#1e1e26] border border-zinc-800 hover:border-indigo-500/50 rounded-xl p-2 flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633] group overflow-hidden h-24">
+                                                                        <div className="w-10 h-10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+                                                                            {item.type === 'image' ? (
+                                                                                <img src={(item as any).url} alt={item.label} className={`w-full h-full ${category === 'gradients' ? 'object-cover rounded-md' : 'object-contain filter drop-shadow-md'}`} loading="lazy" />
+                                                                            ) : item.type === 'svg' ? (
+                                                                                <div dangerouslySetInnerHTML={{ __html: (item as any).svg }} className="w-full h-full drop-shadow-md flex items-center justify-center [&>svg]:w-full [&>svg]:h-full" />
+                                                                            ) : (
+                                                                                <svg viewBox="-5 -5 110 110" className="w-full h-full fill-indigo-400 drop-shadow-md">
+                                                                                    <path d={(item as any).path} />
+                                                                                </svg>
+                                                                            )}
+                                                                        </div>
+                                                                        <span className="text-[9px] font-semibold text-zinc-500 group-hover:text-zinc-300 text-center leading-tight truncate w-full px-1">{item.label}</span>
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {activeElementsCategory === 'stickers' && (
+                                            <div className="grid grid-cols-2 gap-2.5">
+                                                {proStickers.map((url: string, i: number) => (
+                                                    <button key={i} onClick={() => addSticker(url)} className="aspect-square bg-[#0f0f13] rounded-xl overflow-hidden border border-zinc-800 hover:border-emerald-400 p-2 flex items-center justify-center transition-all group">
+                                                        <img src={url} alt="sticker" className="w-full h-full object-contain opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 drop-shadow-xl" loading="lazy" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {['videos', 'audio', 'animations', 'charts', 'forms', 'tables', 'frames', 'grids'].includes(activeElementsCategory) && (
+                                            <div className="p-8 text-center border-2 border-dashed border-zinc-800 rounded-xl bg-white/[0.02]">
+                                                <Sparkles size={24} className="mx-auto text-indigo-400 mb-2 opacity-50" />
+                                                <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">Use the search bar above to unlock millions of pro {activeElementsCategory} and vectors.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* TEXT */}
+                        {activeTab === 'text' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300 pb-20">
+
+                                {/* Primary Actions */}
+                                <div className="space-y-2 relative">
+                                    <button onClick={addHeading} className="w-full py-2.5 bg-[#8b3dff] hover:bg-[#7b2cfa] border border-[#7b2cfa] rounded-xl flex flex-col items-center justify-center transition-all shadow-md group">
+                                        <span className="font-bold text-[13px] text-white group-hover:scale-[1.02] transition-transform">Add a text box</span>
                                     </button>
-                                ))}
+                                    <button onClick={() => setIsMagicWriteOpen(!isMagicWriteOpen)} className="w-full py-2 bg-[#1e1e26] border border-zinc-800 hover:bg-[#252530] hover:border-[#8b3dff]/30 rounded-xl flex items-center justify-center gap-2 transition-all group">
+                                        <Sparkles size={14} className="text-[#8b3dff]" />
+                                        <span className="font-semibold text-xs text-zinc-300 group-hover:text-white transition-colors">Magic Write</span>
+                                    </button>
+
+                                    {isMagicWriteOpen && (
+                                        <div className="absolute left-0 top-20 w-full bg-[#1e1e26] border border-purple-500/50 rounded-xl p-3 shadow-[0_10px_40px_rgba(0,0,0,0.6)] z-[70] animate-in fade-in zoom-in-95">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest flex items-center gap-1.5"><Sparkles size={10} /> AI Writer</span>
+                                                <button onClick={() => setIsMagicWriteOpen(false)} className="text-zinc-500 hover:text-white"><X size={12} /></button>
+                                            </div>
+                                            <textarea
+                                                autoFocus
+                                                value={magicWriteText}
+                                                onChange={(e) => setMagicWriteText(e.target.value)}
+                                                placeholder="Describe the text you want..."
+                                                className="w-full h-20 bg-[#141419] border border-zinc-800 rounded-lg p-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500/50 resize-none mb-3"
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    if (magicWriteText.trim()) {
+                                                        addObj(new (fabric as any).IText(magicWriteText, { left: canvasWidth / 2 - 100, top: canvasHeight / 2 - 20, fontSize: 32, fontFamily: 'Inter', fill: '#ffffff', fontWeight: 'bold' }));
+                                                        setMagicWriteText('');
+                                                        setIsMagicWriteOpen(false);
+                                                    }
+                                                }}
+                                                className="w-full py-2 bg-[#8b3dff] hover:bg-[#7b2cfa] text-white text-xs font-bold rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                                                <Wand2 size={12} /> Generate
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Default Text Styles */}
+                                <div>
+                                    <h4 className="text-[11px] font-bold text-zinc-400 mb-2 px-1">Default text styles</h4>
+                                    <div className="space-y-1">
+                                        <button onClick={addHeading} className="w-full px-3 py-3 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                            <span className="font-black text-2xl text-white tracking-tight">Add a heading</span>
+                                        </button>
+                                        <button onClick={addSubheading} className="w-full px-3 py-2.5 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                            <span className="font-bold text-lg text-zinc-200">Add a subheading</span>
+                                        </button>
+                                        <button onClick={addBodyText} className="w-full px-3 py-2 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                            <span className="font-medium text-sm text-zinc-400">Add a little bit of body text</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Font Combinations */}
+                                <div>
+                                    <h4 className="text-[11px] font-bold text-zinc-400 mb-3 px-1">Font combinations</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div onClick={() => addFontPreset('happy_bday')} className="col-span-2 h-24 bg-pink-500 rounded-xl border border-pink-400 flex flex-col items-center justify-center cursor-pointer hover:border-pink-300 hover:scale-[1.02] transition-all shadow-lg shadow-pink-900/30 group">
+                                            <span className="font-serif text-3xl font-bold text-yellow-300 italic -rotate-2 drop-shadow-md group-hover:rotate-0 transition-transform">Happy</span>
+                                            <span className="font-sans text-[11px] font-black text-white tracking-[0.2em] uppercase mt-1">BIRTHDAY</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('golden_hour')} className="h-28 bg-gradient-to-b from-amber-400 to-orange-500 rounded-xl flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer shadow-lg group">
+                                            <span className="font-sans text-xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">GOLDEN</span>
+                                            <span className="font-sans text-xl font-bold text-yellow-200 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">HOUR</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('glow')} className="h-28 bg-black rounded-xl border border-pink-500/30 flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer shadow-lg shadow-pink-900/20 group">
+                                            <span className="font-sans text-2xl font-black text-white drop-shadow-[0_0_12px_#ec4899]">GLOW</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('level_up')} className="col-span-2 h-20 bg-zinc-950 rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group overflow-hidden relative border border-zinc-800">
+                                            <span className="font-mono text-2xl font-black text-red-500 drop-shadow-[2px_2px_0_#000000] -translate-y-1 -rotate-3 z-10 group-hover:rotate-0 transition-transform">LEVEL</span>
+                                            <span className="font-mono text-2xl font-black text-blue-500 drop-shadow-[2px_2px_0_#000000] translate-y-2 rotate-3 ml-2 z-10 group-hover:rotate-0 transition-transform">UP</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('sweet')} className="h-24 bg-[#fdf2f8] rounded-xl flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
+                                            <span className="font-serif text-3xl font-bold text-pink-500 italic drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)]">Sweet</span>
+                                            <span className="font-sans text-[9px] font-black text-black tracking-[0.2em] uppercase mt-0.5">TREATS</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('wild_sale')} className="h-24 bg-yellow-400 rounded-xl border-2 border-black flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
+                                            <span className="font-sans text-2xl font-black text-white px-1 relative -top-1 shadow-black shadow-[2px_2px_0_0_#000] -rotate-3">WILD</span>
+                                            <span className="font-sans text-2xl font-black text-red-500 px-1 relative shadow-black shadow-[2px_2px_0_0_#000] rotate-3">SALE</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('spring_collection')} className="col-span-2 h-24 bg-emerald-900 rounded-xl flex items-center justify-center flex-col cursor-pointer hover:scale-[1.02] transition-all shadow-lg group">
+                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em]">SPRING</span>
+                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em] mt-1">COLLECTION</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('hustle')} className="h-24 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
+                                            <span className="font-sans text-xl font-bold text-white drop-shadow-[4px_4px_0_#ea580c] -skew-x-12">HUSTLE</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('tattoo_studio')} className="h-24 bg-zinc-900 rounded-xl border border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
+                                            <span className="font-serif text-2xl font-bold text-white italic">Tattoo</span>
+                                            <span className="font-mono text-[9px] font-bold text-zinc-400 tracking-widest mt-1">STUDIO</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('talk_to_us')} className="col-span-2 h-20 bg-blue-600 rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] hover:bg-blue-500 transition-all shadow-lg group">
+                                            <span className="font-sans text-xl font-black text-white mr-1 -rotate-2 group-hover:rotate-0 transition-transform">TALK</span>
+                                            <span className="font-sans text-xl font-black text-black rotate-2 ml-1 group-hover:rotate-0 transition-transform">TO US</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('coming_soon')} className="h-20 bg-[#0f172a] rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border border-teal-900/50">
+                                            <span className="font-mono text-xs font-bold text-teal-400 tracking-widest drop-shadow-[0_0_8px_rgba(20,184,166,0.8)]">COMING SOON</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('play')} className="h-20 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border-b-4 border-r-4 border-black">
+                                            <span className="font-sans text-xl font-black text-purple-500 drop-shadow-[-3px_3px_0_#3b82f6]">PLAY</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('dapper')} className="col-span-2 h-20 bg-[#18181b] rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:border-zinc-700 hover:scale-[1.02] transition-all group">
+                                            <span className="font-serif text-lg font-normal text-white uppercase tracking-[0.2em]">Dapper</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('sweet')} className="h-24 bg-[#fdf2f8] rounded-xl flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
+                                            <span className="font-serif text-3xl font-bold text-pink-500 italic drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)]">Sweet</span>
+                                            <span className="font-sans text-[9px] font-black text-black tracking-[0.2em] uppercase mt-0.5">TREATS</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('wild_sale')} className="h-24 bg-yellow-400 rounded-xl border-2 border-black flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
+                                            <span className="font-sans text-2xl font-black text-white px-1 relative -top-1 shadow-black shadow-[2px_2px_0_0_#000] -rotate-3">WILD</span>
+                                            <span className="font-sans text-2xl font-black text-red-500 px-1 relative shadow-black shadow-[2px_2px_0_0_#000] rotate-3">SALE</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('spring_collection')} className="col-span-2 h-24 bg-emerald-900 rounded-xl flex items-center justify-center flex-col cursor-pointer hover:scale-[1.02] transition-all shadow-lg group">
+                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em]">SPRING</span>
+                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em] mt-1">COLLECTION</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('hustle')} className="h-24 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
+                                            <span className="font-sans text-xl font-bold text-white drop-shadow-[4px_4px_0_#ea580c] -skew-x-12">HUSTLE</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('tattoo_studio')} className="h-24 bg-zinc-900 rounded-xl border border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
+                                            <span className="font-serif text-2xl font-bold text-white italic">Tattoo</span>
+                                            <span className="font-mono text-[9px] font-bold text-zinc-400 tracking-widest mt-1">STUDIO</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('talk_to_us')} className="col-span-2 h-20 bg-blue-600 rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] hover:bg-blue-500 transition-all shadow-lg group">
+                                            <span className="font-sans text-xl font-black text-white mr-1 -rotate-2 group-hover:rotate-0 transition-transform">TALK</span>
+                                            <span className="font-sans text-xl font-black text-black rotate-2 ml-1 group-hover:rotate-0 transition-transform">TO US</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('coming_soon')} className="h-20 bg-[#0f172a] rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border border-teal-900/50">
+                                            <span className="font-mono text-xs font-bold text-teal-400 tracking-widest drop-shadow-[0_0_8px_rgba(20,184,166,0.8)]">COMING SOON</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('play')} className="h-20 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border-b-4 border-r-4 border-black">
+                                            <span className="font-sans text-xl font-black text-purple-500 drop-shadow-[-3px_3px_0_#3b82f6]">PLAY</span>
+                                        </div>
+                                        <div onClick={() => addFontPreset('dapper')} className="col-span-2 h-20 bg-[#18181b] rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:border-zinc-700 hover:scale-[1.02] transition-all group">
+                                            <span className="font-serif text-lg font-normal text-white uppercase tracking-[0.2em]">Dapper</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* UPLOADS */}
+                        {activeTab === 'uploads' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                <button onClick={() => fileInputRef.current?.click()}
+                                    className="w-full py-6 border-2 border-dashed border-indigo-500/50 hover:border-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-2xl flex flex-col items-center gap-3 text-indigo-400 transition-all shadow-inner">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                        <ImagePlus size={20} className="text-indigo-300" />
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-xs font-bold text-white block">Upload Files</span>
+                                        <span className="text-[10px] text-zinc-500">Images, Videos or Audio</span>
+                                    </div>
+                                </button>
+
+                                <div>
+                                    <h4 className="text-xs font-bold text-zinc-300 mb-3">Stock Inspiration</h4>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        {stockPhotos.map((url, i) => (
+                                            <button key={i} onClick={() => addStockPhoto(url)}
+                                                className="aspect-square rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 focus:ring-2 focus:ring-indigo-500/50 transition-all group">
+                                                <img src={url} alt="stock" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* BRAND KIT */}
+                        {activeTab === 'brand' && (
+                            <div className="space-y-6 flex flex-col items-center text-center py-6 px-2 animate-in fade-in slide-in-from-bottom-5">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-yellow-400 to-amber-600 flex items-center justify-center p-1 mb-2 shadow-[0_10px_30px_rgba(251,191,36,0.2)]">
+                                    <div className="w-full h-full bg-[#121216] rounded-xl flex items-center justify-center">
+                                        <Palette size={28} className="text-yellow-500" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-extrabold text-white mb-2 tracking-wide">Brand Kit</h4>
+                                    <p className="text-xs text-zinc-400 leading-relaxed max-w-[240px] mx-auto font-medium">Keep your brand consistent. Upload your logos, fonts, and custom color palettes for instant access.</p>
+                                </div>
+                                <button className="w-full mt-4 py-3 bg-white hover:bg-zinc-200 text-black rounded-xl text-xs font-bold transition-all shadow-xl hover:scale-[1.02]">
+                                    Set up your Brand Kit
+                                </button>
+                            </div>
+                        )}
+
+                        {/* PRO TOOLS */}
+                        {activeTab === 'tools' && (
+                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div>
+                                    <h4 className="text-xs font-bold text-zinc-300 mb-3 uppercase tracking-wider flex items-center gap-2">
+                                        <Sparkles size={14} className="text-purple-400" /> Magic Studio Tools
+                                    </h4>
+                                    <button onClick={() => alert('Magic Write initialized.')} className="w-full p-5 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border border-purple-500/30 hover:border-purple-400/50 rounded-2xl flex flex-col items-center gap-3 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] group text-center mb-3">
+                                        <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                            <Wand2 size={24} className="text-purple-300 group-hover:scale-110 transition-transform" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-purple-100">Magic Write</h4>
+                                            <p className="text-[11px] text-purple-300/70 mt-1 font-medium">Generate amazing typography & copy</p>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={handleRemoveBackgroundEditor} className="p-4 bg-[#1e1e26] border border-zinc-800 hover:border-emerald-500/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633]">
+                                        <Scissors size={20} className="text-emerald-400" />
+                                        <span className="text-[10px] font-bold text-zinc-300 text-center">BG Remover</span>
+                                    </button>
+                                    <button className="p-4 bg-[#1e1e26] border border-zinc-800 hover:border-blue-500/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633]">
+                                        <LayersIcon size={20} className="text-blue-400" />
+                                        <span className="text-[10px] font-bold text-zinc-300 text-center">Magic Morph</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* PROJECTS */}
+                        {activeTab === 'projects' && (
+                            <div className="space-y-6 pt-4 text-center animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="w-16 h-16 rounded-full bg-zinc-800/50 mx-auto flex items-center justify-center border border-zinc-700/50 mb-4 shadow-inner">
+                                    <LayersIcon size={28} className="text-indigo-400" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-white mb-2">Projects & Designs</h4>
+                                    <p className="text-xs text-zinc-400 leading-relaxed font-medium">Organize your workflow. Search your folders, previous designs, and imported assets.</p>
+                                </div>
+                                <div className="text-left space-y-2 mt-6">
+                                    <button className="w-full p-3.5 bg-[#1e1e26] hover:bg-[#262633] border border-zinc-800 rounded-xl flex items-center gap-3 transition-colors shadow-sm">
+                                        <div className="w-9 h-9 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shrink-0"><Plus size={16} /></div>
+                                        <div>
+                                            <span className="text-xs font-bold text-zinc-200 block">Create folder</span>
+                                            <span className="text-[9px] text-zinc-500">Organize your elements</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* APPS */}
+                        {activeTab === 'apps' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div>
+                                    <h4 className="text-xs font-bold text-zinc-300 mb-3">Popular Integrations</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                            { n: 'Typecraft', c: 'from-orange-500 to-red-500' },
+                                            { n: 'Mockups', c: 'from-emerald-400 to-teal-600' },
+                                            { n: 'QR Code', c: 'from-zinc-700 to-zinc-900' },
+                                            { n: 'Drive', c: 'from-blue-500 to-indigo-600' }
+                                        ].map((a, i) => (
+                                            <button key={i} className="aspect-square bg-[#1e1e26] hover:bg-[#262633] border border-zinc-800 hover:border-zinc-700 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-sm">
+                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${a.c} flex items-center justify-center text-white font-black text-xl shadow-lg ring-1 ring-white/20`}>{a.n[0]}</div>
+                                                <span className="text-[11px] font-bold text-zinc-300">{a.n}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* BACKGROUND TAB */}
+                        {activeTab === 'background' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-xs font-bold text-zinc-300">Solid Document Colors</h4>
+                                        <span className="text-[9px] font-bold text-indigo-400 bg-indigo-400/10 px-1.5 py-0.5 rounded">
+                                            {activeObject?.type === 'image' || activeObject?.type === 'FabricImage' ? 'Image Fill' : 'Canvas Fill'}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-6 gap-2">
+                                        {bgColorsList.map((color, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => applySmartBackground(color, false)}
+                                                style={{ backgroundColor: color }}
+                                                className="w-full aspect-square rounded-md border border-zinc-700 hover:scale-[1.15] hover:border-white transition-all shadow-sm z-10"
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-xs font-bold text-zinc-300 mb-3">Premium Textures</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {bgStockWallpapers.map((url, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => applySmartBackground(url, true)}
+                                                className="aspect-[4/3] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all relative group"
+                                            >
+                                                <img src={url} alt="wallpaper" className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity backdrop-blur-[2px]">
+                                                    <span className="text-[10px] font-bold text-white bg-indigo-600 px-3 py-1 rounded-full shadow-lg">Apply Back</span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         )}
 
                         {/* LAYERS */}
                         {activeTab === 'layers' && (
-                            <div className="space-y-1">
-                                {layers.length === 0 && <p className="text-xs text-zinc-600 text-center py-6">No objects yet</p>}
+                            <div className="space-y-1 animate-in fade-in slide-in-from-left-4 duration-300">
+                                {layers.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-10 opacity-60">
+                                        <LayersIcon size={32} className="text-zinc-600 mb-3" />
+                                        <p className="text-xs font-bold text-zinc-400">No objects added yet</p>
+                                    </div>
+                                )}
                                 {layers.map((obj, i) => (
                                     <div key={i}
                                         onClick={() => { const c = fabricCanvasRef.current; if (c) { c.setActiveObject(obj); c.renderAll(); syncState(); } }}
-                                        className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors text-xs ${activeObject === obj ? 'bg-indigo-600/10 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900/50 border-zinc-800 hover:bg-zinc-800 text-zinc-400'}`}>
-                                        <span className="truncate">{obj.name || obj.type || 'Layer'}</span>
-                                        <div className="flex items-center gap-1 ml-2 shrink-0">
-                                            <button onClick={(e) => { e.stopPropagation(); toggleVisibility(obj); }} className="p-0.5 hover:text-white">
-                                                {obj.visible !== false ? <Eye size={11} /> : <EyeOff size={11} />}
+                                        className={`flex items-center justify-between p-2.5 rounded-xl border cursor-pointer transition-all text-xs font-medium group ${activeObject === obj ? 'bg-indigo-600/10 border-indigo-500/50 text-indigo-300 shadow-sm' : 'bg-[#1e1e26] border-zinc-800 hover:border-zinc-600 text-zinc-300'}`}>
+                                        <div className="flex items-center gap-2 truncate">
+                                            <div className="w-5 h-5 rounded bg-zinc-800 flex items-center justify-center text-zinc-500">
+                                                {obj.type === 'image' || obj.type === 'FabricImage' ? <ImageIcon size={10} /> : obj.type === 'i-text' ? <Type size={10} /> : <Square size={10} />}
+                                            </div>
+                                            <span className="truncate max-w-[120px]">{obj.name || obj.type || `Layer ${layers.length - i}`}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0 bg-zinc-900 px-1 py-0.5 rounded-lg border border-zinc-800 opacity-80 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={(e) => { e.stopPropagation(); toggleVisibility(obj); }} className="p-1 hover:text-white hover:bg-zinc-800 rounded transition-colors">
+                                                {obj.visible !== false ? <Eye size={12} /> : <EyeOff size={12} className="text-red-400" />}
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); const c = fabricCanvasRef.current; if (c && c.bringObjectForward) { c.bringObjectForward(obj); c.renderAll(); syncState(); } }} className="p-0.5 hover:text-white"><ChevronUp size={11} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); const c = fabricCanvasRef.current; if (c && c.sendObjectBackwards) { c.sendObjectBackwards(obj); c.renderAll(); syncState(); } }} className="p-0.5 hover:text-white"><ChevronDown size={11} /></button>
+                                            <div className="w-px h-3 bg-zinc-700"></div>
+                                            <button onClick={(e) => { e.stopPropagation(); const c = fabricCanvasRef.current; if (c && c.bringObjectForward) { c.bringObjectForward(obj); c.renderAll(); syncState(); } }} className="p-1 hover:text-white hover:bg-zinc-800 rounded transition-colors"><ChevronUp size={12} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); const c = fabricCanvasRef.current; if (c && c.sendObjectBackwards) { c.sendObjectBackwards(obj); c.renderAll(); syncState(); } }} className="p-1 hover:text-white hover:bg-zinc-800 rounded transition-colors"><ChevronDown size={12} /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -1890,31 +2542,85 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                 </aside>
 
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <header className="h-14 bg-[#111118]/95 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between px-5 shrink-0 z-10">
+                    <header className="h-14 bg-gradient-to-r from-[#171720] to-[#111118] border-b border-zinc-800/80 flex items-center justify-between px-4 shrink-0 z-50">
                         <div className="flex items-center gap-4">
+
+                            {/* Home */}
                             <button onClick={() => router.push('/dashboard')}
-                                className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#262633] border border-white/5 hover:bg-white/10 text-zinc-300 hover:text-white transition group z-50">
-                                <Home size={13} />
+                                className="flex items-center justify-center w-9 h-9 rounded bg-[#262633]/80 border border-white/5 hover:bg-indigo-600 hover:border-indigo-500 text-white transition-all shadow-sm relative z-[60] pointer-events-auto">
+                                <Home size={16} />
                             </button>
-                            <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-4 text-zinc-300">
-                                <button onClick={undo} title="Undo (Ctrl+Z)" className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"><Undo2 size={15} /></button>
-                                <button onClick={redo} title="Redo (Ctrl+Y)" className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors disabled:opacity-30"><Redo2 size={15} /></button>
+
+                            <div className="h-5 w-px bg-zinc-800/80 mx-1" />
+
+                            {/* Isolated Undo/Redo Engine */}
+                            <div className="flex items-center bg-[#191922] border border-zinc-800/80 shadow-inner rounded-lg p-0.5 relative z-[60]">
+                                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); undo(); }} disabled={!canUndo} title="Undo (Ctrl+Z)" className="p-2 hover:bg-zinc-800/60 text-zinc-400 hover:text-white rounded-md transition-colors disabled:opacity-25 relative z-50 pointer-events-auto">
+                                    <Undo2 size={15} />
+                                </button>
+                                <div className="w-[1px] h-4 bg-zinc-800 mx-1" />
+                                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); redo(); }} disabled={!canRedo} title="Redo (Ctrl+Y)" className="p-2 hover:bg-zinc-800/60 text-zinc-400 hover:text-white rounded-md transition-colors disabled:opacity-25 relative z-50 pointer-events-auto">
+                                    <Redo2 size={15} />
+                                </button>
                             </div>
-                            <div className="flex items-center gap-2 border-l border-zinc-800 pl-4">
-                                <span className="text-xs text-zinc-500">Size:</span>
-                                <select value={activePreset}
-                                    onChange={e => {
-                                        const v = e.target.value;
-                                        const p = presetCards.find(pc => pc.key === v);
-                                        if (p) applyPreset(p.key, p.w, p.h);
-                                    }}
-                                    className="bg-zinc-900 border border-zinc-700 rounded-lg text-xs px-2 py-1.5 focus:outline-none focus:border-indigo-500 text-zinc-300 cursor-pointer">
-                                    {presetCards.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-                                </select>
+
+                            <div className="h-5 w-px bg-zinc-800/80 mx-1" />
+
+                            {/* Size Selector */}
+                            <div className="flex items-center bg-transparent relative z-[60]">
+                                <button
+                                    onClick={() => setIsSizeDropdownOpen(!isSizeDropdownOpen)}
+                                    className="text-[13px] text-zinc-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors flex items-center gap-2 font-medium pointer-events-auto border border-zinc-800/60 shadow-sm bg-[#1e1e26]/50"
+                                >
+                                    <span>{activePreset || 'Custom Size'} — {canvasWidth}x{canvasHeight}px</span>
+                                    <ChevronDown size={14} className="text-zinc-500" />
+                                </button>
+
+                                {isSizeDropdownOpen && (
+                                    <div className="absolute top-10 left-0 w-[260px] bg-[#1a1a22] border border-zinc-700/80 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-2 z-[70] animate-in zoom-in-95 duration-100 text-left">
+                                        <div className="px-4 py-2 border-b border-zinc-800">
+                                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Canvas Size</p>
+                                        </div>
+                                        {[
+                                            { label: 'Instagram Post', w: 1080, h: 1080, icon: <Square size={14} /> },
+                                            { label: 'YouTube Thumb', w: 1280, h: 720, icon: <Monitor size={14} /> },
+                                            { label: 'Mobile Story', w: 1080, h: 1920, icon: <Monitor size={14} /> },
+                                            { label: 'A4 Document', w: 794, h: 1123, icon: <FileText size={14} /> },
+                                            { label: 'Poster', w: 1587, h: 2245, icon: <Maximize size={14} /> },
+                                            { label: 'Presentation', w: 1920, h: 1080, icon: <Monitor size={14} /> }
+                                        ].map(s => (
+                                            <button
+                                                key={s.label}
+                                                onClick={() => {
+                                                    setActivePreset(s.label);
+                                                    setCanvasWidth(s.w);
+                                                    setCanvasHeight(s.h);
+                                                    setIsSizeDropdownOpen(false);
+                                                    if (fabricCanvasRef.current) {
+                                                        fabricCanvasRef.current.setWidth(s.w);
+                                                        fabricCanvasRef.current.setHeight(s.h);
+                                                        fabricCanvasRef.current.renderAll();
+                                                        setTimeout(() => pushHistory(), 100);
+                                                    }
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 flex items-center justify-between text-sm text-zinc-200 transition-colors group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-indigo-400 opacity-70 group-hover:opacity-100">{s.icon}</span>
+                                                    <span>{s.label}</span>
+                                                </div>
+                                                <span className="text-[10px] text-zinc-500 font-mono">{s.w}x{s.h}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4 relative z-[60] pointer-events-auto pr-2">
+
+                            {/* Save Button */}
                             {authUser && (
                                 <button
                                     onClick={async () => {
@@ -1932,38 +2638,44 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                                 const { data } = await api.post('/projects', payload);
                                                 setCurrentProjectId(data.id);
                                             }
-                                            setToast({ message: 'Project saved successfully!', type: 'success' });
                                         } catch (e) {
                                             console.error(e);
-                                            setToast({ message: 'Failed to save project.', type: 'error' });
                                         }
                                         setIsSaving(false);
-                                        setTimeout(() => setToast(null), 3000);
                                     }}
-                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-700"
+                                    className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors text-[13px] font-semibold px-3 py-1.5 rounded-lg hover:bg-zinc-800"
+                                    title="Save Project"
                                 >
-                                    {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
-                                    <span>Save</span>
+                                    {isSaving ? <Loader2 size={16} className="animate-spin text-indigo-400" /> : <Cloud size={16} strokeWidth={2.5} />}
+                                    Save
                                 </button>
                             )}
 
-                            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-full px-1">
-                                <button onClick={() => { fabricCanvasRef.current?.setZoom((fabricCanvasRef.current.getZoom() ?? 1) * 0.85); }} className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><ZoomOut size={13} /></button>
-                                <span className="text-xs font-mono px-2 text-zinc-300">{Math.round((fabricCanvasRef.current?.getZoom() ?? 1) * 100)}%</span>
-                                <button onClick={() => { fabricCanvasRef.current?.setZoom((fabricCanvasRef.current.getZoom() ?? 1) * 1.15); }} className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><ZoomIn size={13} /></button>
-                                <button onClick={() => { fabricCanvasRef.current?.setZoom(1); }} className="p-1.5 rounded-full hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"><Maximize size={13} /></button>
+                            <div className="h-5 w-px bg-zinc-800/80 mx-1" />
+
+                            {/* Zoom Controls */}
+                            <div className="flex items-center bg-transparent text-xs font-semibold text-zinc-300 pointer-events-auto">
+                                <button onClick={() => setZoomRatio(Math.max(0.1, zoomRatio - 0.1))} className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400 hover:text-white"><Minus size={14} /></button>
+                                <span className="w-11 text-center font-bold tracking-wide">{Math.round(zoomRatio * 100)}%</span>
+                                <button onClick={() => setZoomRatio(Math.min(5, zoomRatio + 0.1))} className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-400 hover:text-white"><Plus size={14} /></button>
                             </div>
+
+                            <div className="h-5 w-px bg-zinc-800/80 mx-1" />
+
                             <div className="relative">
                                 <button onClick={() => setExportOpen(v => !v)}
-                                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-semibold px-4 py-2 rounded-full flex items-center gap-2 shadow-lg transition-all hover:scale-105">
-                                    <span>Export</span><Download size={14} />
+                                    className="bg-[#8b3dff] hover:bg-[#7b32e6] text-white text-sm font-semibold px-5 py-1.5 rounded flex items-center gap-2 transition-colors">
+                                    <ArrowUpToLine size={16} /> Export
                                 </button>
                                 {exportOpen && (
-                                    <div className="absolute top-11 right-0 w-48 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl py-1 z-50">
-                                        <button onClick={exportPDF} className="w-full text-left px-4 py-2 hover:bg-zinc-800 flex items-center gap-2 text-sm text-indigo-400 font-medium"><FileText size={13} /><span>PDF Document</span></button>
-                                        <button onClick={exportPNG} className="w-full text-left px-4 py-2 hover:bg-zinc-800 flex items-center gap-2 text-sm text-zinc-300"><ImageIcon size={13} className="text-blue-400" /><span>PNG Image</span></button>
-                                        <button onClick={exportSVG} className="w-full text-left px-4 py-2 hover:bg-zinc-800 flex items-center gap-2 text-sm text-zinc-300"><FileImage size={13} className="text-pink-400" /><span>SVG Vector</span></button>
-                                        <button onClick={exportJSON} className="w-full text-left px-4 py-2 hover:bg-zinc-800 flex items-center gap-2 text-sm text-zinc-300"><FileJson size={13} className="text-emerald-400" /><span>JSON State</span></button>
+                                    <div className="absolute top-10 right-0 w-56 bg-[#1a1a22] border border-zinc-700/80 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] py-2 z-50 animate-in zoom-in-95 duration-100">
+                                        <div className="px-4 py-2 border-b border-zinc-800">
+                                            <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Download</p>
+                                        </div>
+                                        <button onClick={exportPDF} className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 flex items-center gap-3 text-sm text-indigo-400 font-medium transition-colors"><FileText size={16} /><span>PDF Document</span></button>
+                                        <button onClick={exportPNG} className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 flex items-center gap-3 text-sm text-zinc-200 transition-colors"><ImageIcon size={16} className="text-blue-400" /><span>PNG Image</span></button>
+                                        <button onClick={exportSVG} className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 flex items-center gap-3 text-sm text-zinc-200 transition-colors"><FileImage size={16} className="text-pink-400" /><span>SVG Vector</span></button>
+                                        <button onClick={exportJSON} className="w-full text-left px-4 py-2.5 hover:bg-zinc-800 flex items-center gap-3 text-sm text-zinc-200 transition-colors"><FileJson size={16} className="text-emerald-400" /><span>JSON Template</span></button>
                                     </div>
                                 )}
                             </div>
@@ -1971,73 +2683,93 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                     </header>
 
                     {/* Top Context Toolbar */}
-                    <div className="h-14 bg-[#18181b] border-b border-zinc-800/80 flex items-center px-4 gap-4 shrink-0 overflow-x-auto z-10 shadow-sm scrollbar-hide">
+                    <div className="h-[52px] bg-[#1a1a22] border-b border-zinc-800/80 flex items-center px-4 gap-4 shrink-0 overflow-x-auto z-40 shadow-sm scrollbar-hide">
                         {!activeObject ? (
-                            <span className="text-zinc-600 text-[11px] font-semibold uppercase tracking-widest pl-2">Select an element on canvas to edit properties</span>
+                            <div className="flex items-center text-zinc-400 text-xs font-medium tracking-wide gap-2 opacity-80 pl-2">
+                                <Info size={14} className="text-indigo-400" />
+                                <span>Select an element on the canvas to see its formatting tools here</span>
+                            </div>
                         ) : (
-                            <div className="flex items-center gap-4 h-full py-1">
-                                <div className="flex items-center gap-1 border-r border-zinc-700/50 pr-4">
-                                    <button onClick={copy} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white" title="Copy"><Copy size={15} /></button>
-                                    <button onClick={() => { copy(); paste(); }} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white" title="Duplicate"><Copy size={15} /></button>
-                                    <button onClick={deleteSelected} className="p-1.5 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-zinc-400" title="Delete"><Trash2 size={15} /></button>
+                            <div className="flex items-center gap-3 h-full py-1.5 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="flex items-center gap-1.5 border-r border-zinc-700/50 pr-4">
+                                    <button onClick={() => { copy(); paste(); }} className="px-3 py-1.5 bg-[#262633] hover:bg-zinc-700 rounded-md text-zinc-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-semibold" title="Duplicate">
+                                        <CopyPlus size={14} /> Duplicate
+                                    </button>
+                                    <button onClick={deleteSelected} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-md transition-colors" title="Delete">
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
 
                                 {activeObject.type === 'i-text' && (
-                                    <div className="flex items-center gap-4 border-r border-zinc-700/50 pr-4">
-                                        <div className="flex items-center gap-2">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Color</label>
-                                            <input type="color" value={typeof getProp('fill', '#000000') === 'string' ? getProp('fill', '#000000') : '#000000'} onChange={e => setProp('fill', e.target.value)} className="w-6 h-6 rounded cursor-pointer bg-transparent border-0" />
+                                    <div className="flex items-center gap-3 border-r border-zinc-700/50 pr-4">
+                                        <div className="flex items-center gap-2 px-2">
+                                            <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">Color:</span>
+                                            <div className="relative group rounded-md overflow-hidden ring-1 ring-zinc-700 hover:ring-indigo-500 transition-all cursor-pointer">
+                                                <input type="color" value={typeof getProp('fill', '#000000') === 'string' ? getProp('fill', '#000000') : '#000000'} onChange={e => setProp('fill', e.target.value)} className="w-7 h-7 cursor-pointer bg-transparent border-0 opacity-0 absolute inset-0 z-10" />
+                                                <div className="w-7 h-7" style={{ backgroundColor: getProp('fill', '#ffffff') as string }} />
+                                            </div>
                                         </div>
-                                        <div className="flex items-center bg-zinc-900 rounded-lg p-0.5 border border-zinc-800">
-                                            <button onClick={() => setProp('fontWeight', getProp('fontWeight', 'normal') === 'bold' ? 'normal' : 'bold')} className={`p-1.5 rounded-md ${getProp('fontWeight') === 'bold' ? 'bg-indigo-600/30 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Bold size={14} /></button>
-                                            <button onClick={() => setProp('fontStyle', getProp('fontStyle', 'normal') === 'italic' ? 'normal' : 'italic')} className={`p-1.5 rounded-md ${getProp('fontStyle') === 'italic' ? 'bg-indigo-600/30 text-indigo-400' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Italic size={14} /></button>
+
+                                        <div className="flex items-center bg-[#262633] rounded-md p-1 border border-zinc-800">
+                                            <button onClick={() => setProp('fontWeight', getProp('fontWeight', 'normal') === 'bold' ? 'normal' : 'bold')} className={`p-1.5 rounded ${getProp('fontWeight') === 'bold' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'}`}><Bold size={15} /></button>
+                                            <button onClick={() => setProp('fontStyle', getProp('fontStyle', 'normal') === 'italic' ? 'normal' : 'italic')} className={`p-1.5 rounded ${getProp('fontStyle') === 'italic' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-zinc-700/50'}`}><Italic size={15} /></button>
                                         </div>
-                                        <div className="flex items-center gap-2 bg-zinc-900 px-2 py-1 rounded-lg border border-zinc-800">
-                                            <label className="text-[10px] text-zinc-500 font-bold uppercase">Size</label>
-                                            <input type="number" value={getProp('fontSize', 24)} onChange={e => setProp('fontSize', parseInt(e.target.value))} className="w-12 bg-transparent text-xs text-white text-center outline-none" min="8" max="200" />
+
+                                        <div className="flex items-center gap-2 bg-[#262633] px-3 py-1.5 rounded-md border border-zinc-800">
+                                            <Minus onClick={() => setProp('fontSize', Math.max((getProp('fontSize', 24) as number) - 1, 8))} size={14} className="text-zinc-400 hover:text-white cursor-pointer" />
+                                            <input type="number" value={getProp('fontSize', 24)} onChange={e => setProp('fontSize', parseInt(e.target.value))} className="w-9 bg-transparent text-xs font-semibold text-white text-center outline-none" min="8" max="250" />
+                                            <Plus onClick={() => setProp('fontSize', Math.min((getProp('fontSize', 24) as number) + 1, 250))} size={14} className="text-zinc-400 hover:text-white cursor-pointer" />
                                         </div>
                                     </div>
                                 )}
 
                                 {(activeObject.type === 'image' || activeObject.type === 'FabricImage') && (
                                     <div className="flex items-center gap-3 border-r border-zinc-700/50 pr-4">
-                                        <button onClick={() => { setIsCroppingEditor(true); startIndependentImageCrop(fabricCanvasRef.current); }} className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-indigo-400"><Crop size={14} /> Crop</button>
-                                        <button onClick={handleRemoveBackgroundEditor} disabled={isRemovingBgEditor} className="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 disabled:opacity-50 rounded-lg text-xs font-semibold flex items-center gap-1.5 text-white shadow-md">
-                                            {isRemovingBgEditor ? <><Loader2 size={13} className="animate-spin" /> Removing...</> : <><Wand2 size={13} /> BG Remover</>}
+                                        <button onClick={() => { setIsCroppingEditor(true); startIndependentImageCrop(fabricCanvasRef.current); }} className="px-3 py-1.5 bg-[#262633] hover:bg-zinc-700 border border-zinc-700/50 rounded-md text-xs font-semibold flex items-center gap-1.5 text-zinc-300 hover:text-white transition-all"><Crop size={14} /> Crop Image</button>
+                                        <button onClick={handleRemoveBackgroundEditor} disabled={isRemovingBgEditor} className="px-4 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:opacity-90 disabled:opacity-50 rounded-md text-xs font-bold flex items-center gap-1.5 text-white shadow-md transition-all hover:shadow-indigo-500/20">
+                                            {isRemovingBgEditor ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                                            {isRemovingBgEditor ? 'Removing...' : 'Remove BG'}
                                         </button>
                                     </div>
                                 )}
 
                                 {activeObject.type !== 'i-text' && activeObject.type !== 'image' && activeObject.type !== 'FabricImage' && (
-                                    <div className="flex items-center gap-2 border-r border-zinc-700/50 pr-4">
-                                        <label className="text-[10px] text-zinc-500 font-bold uppercase">Color</label>
-                                        <input type="color" value={typeof getProp('fill', '#6366f1') === 'string' ? getProp('fill', '#6366f1') : '#6366f1'} onChange={e => setProp('fill', e.target.value)} className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-0" />
+                                    <div className="flex items-center gap-2 border-r border-zinc-700/50 pr-4 pl-2">
+                                        <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">Fill:</span>
+                                        <div className="relative group rounded overflow-hidden ring-1 ring-zinc-700 hover:ring-indigo-500 transition-all cursor-pointer">
+                                            <input type="color" value={typeof getProp('fill', '#6366f1') === 'string' ? getProp('fill', '#6366f1') : '#6366f1'} onChange={e => setProp('fill', e.target.value)} className="w-8 h-8 cursor-pointer bg-transparent border-0 opacity-0 absolute inset-0 z-10" />
+                                            <div className="w-8 h-8" style={{ backgroundColor: getProp('fill', '#6366f1') as string }} />
+                                        </div>
                                     </div>
                                 )}
 
                                 <div className="flex items-center gap-2 border-r border-zinc-700/50 pr-4">
-                                    <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-                                        {[['left', <AlignLeft key="1" size={14} />], ['center-h', <AlignCenter key="2" size={14} />], ['right', <AlignRight key="3" size={14} />]].map(([d, icon]) => (
-                                            <button key={d as string} onClick={() => alignObj(d as string)} className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors">{icon}</button>
+                                    <div className="flex bg-[#262633] border border-zinc-800 rounded-md p-1">
+                                        {[['left', <AlignLeft key="1" size={15} />], ['center-h', <AlignCenter key="2" size={15} />], ['right', <AlignRight key="3" size={15} />]].map(([d, icon]) => (
+                                            <button key={d as string} onClick={() => alignObj(d as string)} className="p-1.5 rounded hover:bg-zinc-700 text-zinc-400 hover:text-white transition-colors">{icon}</button>
                                         ))}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <label className="text-[10px] pr-1 text-zinc-500 font-bold uppercase">Opacity</label>
-                                    <input type="range" min="0" max="1" step="0.05" value={getProp('opacity', 1)} onChange={e => setProp('opacity', parseFloat(e.target.value))} className="w-20 accent-indigo-500" />
+                                <div className="flex items-center gap-2 px-2">
+                                    <span className="text-[11px] pr-1 text-zinc-500 font-bold uppercase tracking-wider">Opacity:</span>
+                                    <input type="range" min="0" max="1" step="0.05" value={getProp('opacity', 1)} onChange={e => setProp('opacity', parseFloat(e.target.value))} className="w-24 accent-indigo-500 bg-zinc-800 h-1.5 rounded-lg appearance-none cursor-pointer" />
+                                    <span className="text-[10px] font-mono text-zinc-400 w-6">{Math.round((getProp('opacity', 1) as number) * 100)}%</span>
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <main ref={wrapperRef} className="flex-1 bg-[#121216] flex items-center justify-center overflow-hidden relative"
+                    <main ref={wrapperRef} className="flex-1 bg-[#0e0e12] flex items-center justify-center overflow-hidden relative"
                         onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY }); }}
-                        onClick={() => setContextMenu(null)}
-                        style={{ backgroundImage: 'radial-gradient(circle, #27272a 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+                        onClick={() => setContextMenu(null)}>
+
+                        {/* A very subtle dotted background grid */}
+                        <div className="absolute inset-0 z-0 pointer-events-none opacity-40"
+                            style={{ backgroundImage: 'radial-gradient(circle, #3f3f46 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                         {isCroppingEditor && (
-                            <div className="absolute top-6 z-30 bg-[#17171e] border border-indigo-500/60 rounded-full px-5 py-2 flex items-center gap-3 shadow-2xl animate-in fade-in slide-in-from-top-4">
+                            <div className="absolute top-6 z-30 bg-[#14141b] border border-indigo-500/60 rounded-full px-5 py-2 flex items-center gap-3 shadow-[0_10px_40px_rgba(99,102,241,0.2)] animate-in fade-in slide-in-from-top-4">
                                 <span className="text-xs font-semibold text-indigo-300">Drag/Resize Box to Crop:</span>
                                 <button onClick={() => applyIndependentCrop(fabricCanvasRef.current, () => setIsCroppingEditor(false))} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-lg transition">
                                     <Check size={14} /> Apply Crop
@@ -2049,11 +2781,11 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                         )}
 
                         {inlineMenuPos && activeObject && !isCroppingEditor && (
-                            <div className="absolute z-[100] bg-[#1e1e24] border border-zinc-700 shadow-xl rounded-lg py-1 px-1.5 flex items-center gap-1 zoom-in-95 animate-in pointer-events-auto"
+                            <div className="absolute z-[100] bg-[#1a1a22] border border-zinc-700/80 shadow-[0_10px_30px_rgba(0,0,0,0.6)] rounded-lg py-1 px-1.5 flex items-center gap-1 zoom-in-95 animate-in pointer-events-auto"
                                 style={{ left: inlineMenuPos.x, top: inlineMenuPos.y, transform: 'translate(-50%, -100%)' }}>
-                                <button onClick={copy} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Copy"><Copy size={13} /></button>
-                                <button onClick={() => { copy(); paste(); }} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Duplicate"><CopyPlus size={13} /></button>
-                                <div className="w-px h-4 bg-zinc-700 mx-1"></div>
+                                <button onClick={copy} className="p-1.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded transition-colors" title="Copy"><Copy size={13} /></button>
+                                <button onClick={() => { copy(); paste(); }} className="p-1.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded transition-colors" title="Duplicate"><CopyPlus size={13} /></button>
+                                <div className="w-px h-4 bg-zinc-700 mx-1.5"></div>
                                 <button onClick={() => {
                                     const c = fabricCanvasRef.current;
                                     if (c && activeObject) {
@@ -2065,21 +2797,21 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                         c.renderAll();
                                         syncState();
                                     }
-                                }} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="Lock/Unlock">
-                                    {activeObject.lockMovementX ? <Lock size={13} /> : <Unlock size={13} />}
+                                }} className="p-1.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded transition-colors" title="Lock/Unlock">
+                                    {activeObject.lockMovementX ? <Lock size={13} className="text-yellow-500" /> : <Unlock size={13} />}
                                 </button>
-                                <div className="w-px h-4 bg-zinc-700 mx-1"></div>
-                                <button onClick={deleteSelected} className="p-1.5 hover:bg-red-500/20 text-red-500 hover:text-red-400 rounded transition-colors" title="Delete"><Trash2 size={13} /></button>
-                                <button onClick={(e) => setContextMenu({ visible: true, x: e.clientX, y: e.clientY })} className="p-1.5 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded transition-colors" title="More options"><MoreHorizontal size={13} /></button>
+                                <div className="w-px h-4 bg-zinc-700 mx-1.5"></div>
+                                <button onClick={deleteSelected} className="p-1.5 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded transition-colors" title="Delete"><Trash2 size={13} /></button>
+                                <button onClick={(e) => setContextMenu({ visible: true, x: e.clientX, y: e.clientY })} className="p-1.5 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded transition-colors" title="More options"><MoreHorizontal size={13} /></button>
                             </div>
                         )}
 
-                        <div className="bg-white rounded-sm shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-1 ring-white/10 origin-center transition-all"
+                        <div className="bg-white relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] origin-center transition-transform"
                             style={{ width: canvasWidth, height: canvasHeight, transform: `scale(${zoomRatio})` }}>
                             {Object.values(activeCursors).map((c: any) => (
                                 <div key={c.socketId} className="absolute z-[99]" style={{ left: c.cursor.x * zoomRatio, top: c.cursor.y * zoomRatio, transition: 'all 0.1s ease-out', pointerEvents: 'none' }}>
-                                    <MousePointer2 fill="#ec4899" color="#ec4899" size={16} className="-rotate-12 drop-shadow-md" />
-                                    <div className="bg-pink-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg translate-x-3 translate-y-1">{c.user?.name || 'Guest'}</div>
+                                    <MousePointer2 fill="#8b3dff" color="#8b3dff" size={18} className="-rotate-12 drop-shadow-md" />
+                                    <div className="bg-[#8b3dff] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-lg translate-x-4 translate-y-1">{c.user?.name || 'Guest'}</div>
                                 </div>
                             ))}
                             <canvas ref={canvasElRef} />
