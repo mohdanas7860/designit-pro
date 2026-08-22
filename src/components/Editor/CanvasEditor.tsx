@@ -34,6 +34,79 @@ export const dashTemplates = [
     { key: 't-minimal-1', label: 'Minimal Studio', url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400' }
 ];
 
+export const brandCategories = [
+    { id: 'all', label: 'All assets' },
+    { id: 'guidelines', label: 'Guidelines' },
+    { id: 'templates', label: 'Brand Templates' },
+    { id: 'logos', label: 'Logos' },
+    { id: 'colours', label: 'Colours' },
+    { id: 'fonts', label: 'Fonts' },
+    { id: 'voice', label: 'Brand voice' },
+    { id: 'photos', label: 'Photos' },
+    { id: 'components', label: 'Components' },
+    { id: 'graphics', label: 'Graphics' },
+    { id: 'icons', label: 'Icons' },
+    { id: 'charts', label: 'Charts' }
+];
+
+export const brandMockData = {
+    templates: Array.from({ length: 16 }).map((_, i) => `https://images.unsplash.com/photo-${1500000000000 + i * 1000}?w=400&q=80`), // Placeholder template URLs
+    logos: Array.from({ length: 16 }).map((_, i) => `https://api.dicebear.com/9.x/initials/svg?seed=Brand${i}&backgroundColor=${['000000', 'ffffff', '6366f1', 'ec4899', 'f59e0b'][i % 5]}`),
+    colours: [
+        '#000000', '#ffffff', '#1e293b', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1',
+        '#0f172a', '#334155', '#cbd5e1', '#f8fafc', '#dc2626', '#ea580c', '#d97706', '#65a30d', '#059669', '#0891b2'
+    ],
+    fonts: [
+        { label: 'Primary Header', family: 'Inter', weight: 'bold' },
+        { label: 'Secondary Header', family: 'Inter', weight: '600' },
+        { label: 'Body Text', family: 'Inter', weight: 'normal' },
+        { label: 'Caption', family: 'Inter', weight: '300' },
+        { label: 'Serif Accent', family: 'Georgia', weight: 'italic' },
+        { label: 'Mono Code', family: 'Courier New', weight: 'normal' },
+        // Filler to 15
+        ...Array.from({ length: 10 }).map((_, i) => ({ label: `Brand Text ${i + 1}`, family: 'Inter', weight: 'normal' }))
+    ],
+    photos: [
+        'https://images.unsplash.com/photo-1542314831-c5a4d407e997?w=400',
+        'https://images.unsplash.com/photo-1618220179428-22790b461013?w=400',
+        'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400',
+        'https://images.unsplash.com/photo-1557683316-973673baf926?w=400',
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400',
+        'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400',
+        'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400',
+        'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400',
+        'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400',
+        'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400',
+        'https://images.unsplash.com/photo-1558655146-d09347e92766?w=400',
+        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400',
+        'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400',
+        'https://images.unsplash.com/photo-1526045612212-70caf35c1ecb?w=400',
+        'https://images.unsplash.com/photo-1493612276216-ee3925520721?w=400',
+        'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=400'
+    ],
+    icons: Array.from({ length: 16 }).map((_, i) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="${6 + (i % 5)}"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line><line x1="2" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22" y2="12"></line></svg>`),
+    graphics: Array.from({ length: 16 }).map((_, i) => `<svg viewBox="-10 -10 120 120" fill="#6366f1" stroke="none"><path d="M50 0 L100 50 L50 100 L0 50 Z" opacity="${0.5 + (0.03 * i)}" transform="rotate(${i * 15}, 50, 50)"/></svg>`),
+    components: Array.from({ length: 16 }).map((_, i) => ({ label: `Button ${i + 1}`, color: ['#6366f1', '#ec4899', '#10b981'][i % 3] })),
+    charts: Array.from({ length: 15 }).map((_, i) => `<svg viewBox="0 0 100 100" fill="none" stroke="#f59e0b" stroke-width="3"><polyline points="0,${100 - i * 5} 33,${20 + i * 4} 66,${80 - i * 3} 100,${10 + i * 2}"/><polyline points="0,${60 + i * 2} 33,${90 - i} 66,${30 + i * 2} 100,${50 - i}" stroke="#3b82f6"/></svg>`)
+};
+
+// ==========================================
+// Fabric.js Global Settings Overhaul
+// ==========================================
+if (typeof window !== 'undefined') {
+    Object.assign((fabric as any).Object.prototype, {
+        transparentCorners: false,
+        borderColor: '#3b82f6',
+        cornerColor: '#3b82f6',
+        cornerStrokeColor: '#3b82f6',
+        cornerStyle: 'rect',
+        cornerSize: 14,
+        padding: 5,
+        borderScaleFactor: 2.5,
+        borderOpacityWhenMoving: 0.8
+    });
+}
+
 export default function CanvasEditor({ initialView = 'editor' }: { initialView?: 'editor' | 'passport-studio' }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -47,6 +120,7 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
     // ── Collaboration State ──────────────────────────────────────────────────
     const socketRef = useRef<Socket | null>(null);
@@ -57,7 +131,7 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         const saved = localStorage.getItem('designit_user');
         if (saved) setAuthUser(JSON.parse(saved));
 
-        socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
+        // socketRef.current = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001');
 
         return () => {
             if (socketRef.current) socketRef.current.disconnect();
@@ -138,6 +212,24 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
     const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(false);
     const [activeTab, setActiveTab] = useState(''); // Start closed, user opens what they want
     const [activeElementsCategory, setActiveElementsCategory] = useState<string | null>(null);
+    const [activeBrandCategory, setActiveBrandCategory] = useState<string | null>(null);
+    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+    const [activeToolFlyout, setActiveToolFlyout] = useState<string | null>(null);
+    const [signatureTab, setSignatureTab] = useState<'text' | 'draw' | 'upload'>('text');
+    const [signatureText, setSignatureText] = useState('John Doe');
+    const [signatureFont, setSignatureFont] = useState('Caveat');
+    const [signatureColor, setSignatureColor] = useState('#000000');
+
+    // -- Projects & Auto-Save State --
+    const [activeProjectsFilter, setActiveProjectsFilter] = useState<'all' | 'designs' | 'folders'>('all');
+    const [activeFolder, setActiveFolder] = useState<string | null>(null);
+    const [savedProjects, setSavedProjects] = useState<any[]>([]);
+    const [savedFolders, setSavedFolders] = useState<any[]>([]);
+    const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+    const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
+    const [createFolderName, setCreateFolderName] = useState('Untitled folder');
+    const folderUploadInputRef = useRef<HTMLInputElement>(null);
+
     const [exportOpen, setExportOpen] = useState(false);
     const [activeObject, setActiveObject] = useState<any>(null);
     const [layers, setLayers] = useState<any[]>([]);
@@ -727,6 +819,18 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
     const addObj = useCallback((obj: any) => {
         const c = fabricCanvasRef.current;
         if (!c) return;
+
+        // Enforce large, prominent control handles directly onto the object instance
+        obj.set({
+            cornerSize: 14,
+            transparentCorners: false,
+            borderScaleFactor: 2.5,
+            borderColor: '#3b82f6',
+            cornerColor: '#3b82f6',
+            cornerStrokeColor: '#3b82f6',
+            padding: 5
+        });
+
         c.add(obj);
         c.setActiveObject(obj);
         c.renderAll();
@@ -1240,10 +1344,10 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         if (i === activePageIndex) switchPage(Math.max(0, i - 1));
     };
 
-    const addRect = () => addObj(new (fabric as any).Rect({ left: canvasWidth / 2 - 75, top: canvasHeight / 2 - 75, width: 150, height: 150, fill: '#6366f1', rx: 8 }));
-    const addCircle = () => addObj(new (fabric as any).Circle({ left: canvasWidth / 2 - 75, top: canvasHeight / 2 - 75, radius: 75, fill: '#ec4899' }));
-    const addTriangle = () => addObj(new (fabric as any).Triangle({ left: canvasWidth / 2 - 60, top: canvasHeight / 2 - 60, width: 120, height: 120, fill: '#10b981' }));
-    const addLine = () => addObj(new (fabric as any).Line([canvasWidth / 2 - 75, canvasHeight / 2, canvasWidth / 2 + 75, canvasHeight / 2], { stroke: '#f59e0b', strokeWidth: 5 }));
+    const addRect = () => addObj(new (fabric as any).Rect({ left: canvasWidth / 2 - 150, top: canvasHeight / 2 - 150, width: 300, height: 300, fill: '#6366f1', rx: 12 }));
+    const addCircle = () => addObj(new (fabric as any).Circle({ left: canvasWidth / 2 - 150, top: canvasHeight / 2 - 150, radius: 150, fill: '#ec4899' }));
+    const addTriangle = () => addObj(new (fabric as any).Triangle({ left: canvasWidth / 2 - 150, top: canvasHeight / 2 - 150, width: 300, height: 300, fill: '#10b981' }));
+    const addLine = () => addObj(new (fabric as any).Line([canvasWidth / 2 - 200, canvasHeight / 2, canvasWidth / 2 + 200, canvasHeight / 2], { stroke: '#f59e0b', strokeWidth: 10 }));
     const addStar = () => {
         const pts = Array.from({ length: 5 }, (_, i) => {
             const outerR = 60, innerR = 24, ang = (Math.PI / 2.5) * i - Math.PI / 2;
@@ -1256,9 +1360,9 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         addObj(new (fabric as any).Polygon(pts, { left: canvasWidth / 2, top: canvasHeight / 2, fill: '#f59e0b', originX: 'center', originY: 'center' }));
     };
 
-    const addHeading = () => addObj(new (fabric as any).IText('Heading Text', { left: canvasWidth / 2 - 120, top: canvasHeight / 2 - 30, fontSize: 48, fontFamily: 'Inter', fill: '#0f172a', fontWeight: 'bold' }));
-    const addSubheading = () => addObj(new (fabric as any).IText('Subheading', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 15, fontSize: 24, fontFamily: 'Inter', fill: '#334155', fontWeight: 'bold' }));
-    const addBodyText = () => addObj(new (fabric as any).IText('Body text here...', { left: canvasWidth / 2 - 80, top: canvasHeight / 2 - 10, fontSize: 16, fontFamily: 'Inter', fill: '#64748b' }));
+    const addHeading = () => addObj(new (fabric as any).IText('Heading Text', { left: canvasWidth / 2 - 200, top: canvasHeight / 2 - 50, fontSize: 84, fontFamily: 'Inter', fill: '#0f172a', fontWeight: 'bold' }));
+    const addSubheading = () => addObj(new (fabric as any).IText('Subheading', { left: canvasWidth / 2 - 150, top: canvasHeight / 2 - 25, fontSize: 48, fontFamily: 'Inter', fill: '#334155', fontWeight: 'bold' }));
+    const addBodyText = () => addObj(new (fabric as any).IText('Body text here...', { left: canvasWidth / 2 - 100, top: canvasHeight / 2 - 15, fontSize: 28, fontFamily: 'Inter', fill: '#64748b' }));
 
     const addFontPreset = (presetKey: string) => {
         const c = fabricCanvasRef.current;
@@ -1356,25 +1460,11 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file || !fabricCanvasRef.current) return;
-        const c = fabricCanvasRef.current;
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
-            const imgEl = new Image();
-            imgEl.src = ev.target?.result as string;
-            imgEl.onload = () => {
-                const scale = Math.min(400 / Math.max(imgEl.naturalWidth, 1), 1);
-                const ImageClass = (fabric as any).FabricImage || (fabric as any).Image;
-                const imgObj = new ImageClass(imgEl, {
-                    left: c.width! / 2,
-                    top: c.height! / 2,
-                    scaleX: scale,
-                    scaleY: scale,
-                    originX: 'center',
-                    originY: 'center',
-                });
-                addObj(imgObj);
-            };
+            const url = ev.target?.result as string;
+            setUploadedFiles(prev => [url, ...prev]);
         };
         reader.readAsDataURL(file);
         e.target.value = '';
@@ -1386,9 +1476,9 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         const ImageClass = (fabric as any).FabricImage || (fabric as any).Image;
         ImageClass.fromURL(url, { crossOrigin: 'anonymous' }).then((img: any) => {
             if (img.scaleToWidth) {
-                img.scaleToWidth(Math.min(400, c.width!));
+                img.scaleToWidth(Math.min(600, c.width!));
             } else {
-                img.scale(Math.min(400 / (img.width || 1), 1));
+                img.scale(Math.min(600 / (img.width || 1), 1));
             }
             img.set({ left: c.width! / 2, top: c.height! / 2, originX: 'center', originY: 'center' });
             addObj(img);
@@ -1409,6 +1499,137 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
     const addSticker = (url: string) => {
         addStockPhoto(url); // Stickers are technically transparent PNGs, so addStockPhoto logic works perfectly
     };
+
+    // --- Autosave & Loading Logic ---
+    // Use refs for stable event listeners in canvas to avoid constant rebinding.
+    const activeProjectRef = useRef<string | null>(null);
+    const activeFolderRef = useRef<string | null>(null);
+    const isHydratingRef = useRef<boolean>(false);
+    useEffect(() => { activeProjectRef.current = activeProjectId; }, [activeProjectId]);
+    useEffect(() => { activeFolderRef.current = activeFolder; }, [activeFolder]);
+
+    const handleFolderImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const url = ev.target?.result as string;
+
+            const mockupJson = {
+                version: '6.0.0',
+                objects: [
+                    { type: 'image', src: url, left: 540, top: 540, originX: 'center', originY: 'center', scaleX: 0.5, scaleY: 0.5 }
+                ]
+            };
+
+            const newId = `upload_${Date.now()}`;
+            const newProject = {
+                id: newId,
+                name: file.name || 'Uploaded Design',
+                json: mockupJson,
+                thumbnail: url,
+                folderId: activeFolderRef.current,
+                updatedAt: new Date().toISOString()
+            };
+
+            setSavedProjects(prev => {
+                const up = [newProject, ...prev];
+                try { localStorage.setItem('canva_clone_projects', JSON.stringify(up)); } catch (e) { }
+                return up;
+            });
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const saveCurrentDesign = useCallback(() => {
+        if (!fabricCanvasRef.current || isHydratingRef.current) return;
+        const json = fabricCanvasRef.current.toJSON();
+
+        if (json.objects && json.objects.length === 0) return;
+
+        const thumbnail = fabricCanvasRef.current.toDataURL({ format: 'png', multiplier: 0.2 });
+
+        setSavedProjects(prev => {
+            let updated = [...prev];
+            const currentId = activeProjectRef.current;
+            const existingIdx = updated.findIndex((p: any) => p.id === currentId);
+
+            if (currentId && existingIdx >= 0) {
+                updated[existingIdx] = {
+                    ...updated[existingIdx],
+                    json,
+                    thumbnail,
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                const newId = `proj_${Date.now()}`;
+                const newProject = {
+                    id: newId,
+                    name: `Design ${updated.length + 1}`,
+                    json,
+                    thumbnail,
+                    folderId: activeFolderRef.current,
+                    updatedAt: new Date().toISOString()
+                };
+                setActiveProjectId(newId);
+                updated = [newProject, ...updated];
+            }
+            try { localStorage.setItem('canva_clone_projects', JSON.stringify(updated)); } catch (e) { }
+            return updated;
+        });
+    }, []);
+
+    const loadProject = useCallback((proj: any) => {
+        if (!fabricCanvasRef.current || !proj || !proj.json) return;
+
+        isHydratingRef.current = true;
+        fabricCanvasRef.current.clear();
+        fabricCanvasRef.current.loadFromJSON(proj.json).then(() => {
+            fabricCanvasRef.current?.renderAll();
+            setActiveProjectId(proj.id);
+            setActiveFolder(proj.folderId || null);
+            pushHistory();
+            setTimeout(() => { isHydratingRef.current = false; }, 200);
+        }).catch((err: any) => {
+            console.error("Failed to load project:", err);
+            isHydratingRef.current = false;
+        });
+    }, [pushHistory]);
+
+    useEffect(() => {
+        try {
+            const data = localStorage.getItem('canva_clone_projects');
+            if (data) setSavedProjects(JSON.parse(data));
+
+            const folderData = localStorage.getItem('canva_clone_folders');
+            if (folderData) setSavedFolders(JSON.parse(folderData));
+        } catch (e) { }
+    }, []);
+
+    useEffect(() => {
+        if (!fabricCanvasRef.current) return;
+        const canvas = fabricCanvasRef.current;
+
+        let timeout: NodeJS.Timeout;
+        const onModify = () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                saveCurrentDesign();
+            }, 3000);
+        };
+
+        canvas.on('object:modified', onModify);
+        canvas.on('object:added', onModify);
+        canvas.on('object:removed', onModify);
+
+        return () => {
+            canvas.off('object:modified', onModify);
+            canvas.off('object:added', onModify);
+            canvas.off('object:removed', onModify);
+            clearTimeout(timeout);
+        };
+    }, [saveCurrentDesign]);
 
     const stockPhotos = [
         'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400',
@@ -1954,8 +2175,7 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
         { id: 'brand', icon: <Palette size={18} />, label: 'Brand' },
         { id: 'uploads', icon: <ImagePlus size={18} />, label: 'Uploads' },
         { id: 'tools', icon: <Wand2 size={18} />, label: 'Tools' },
-        { id: 'projects', icon: <LayersIcon size={18} />, label: 'Projects' },
-        { id: 'apps', icon: <Grid size={18} />, label: 'Apps' },
+        { id: 'projects', icon: <LayersIcon size={18} />, label: 'Projects' }
     ];
 
     return (
@@ -2035,13 +2255,13 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                                 <button onClick={() => addStockPhoto('https://images.unsplash.com/photo-1618220179428-22790b461013?w=400')} className="aspect-square bg-[#1e1e26] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative">
                                                     <img src="https://images.unsplash.com/photo-1618220179428-22790b461013?w=400" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" alt="Rec" />
                                                 </button>
-                                                <button onClick={addCircle} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
+                                                <button onClick={addCircle} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'circle')} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
                                                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-500 to-indigo-500 group-hover:scale-110 transition-transform shadow-lg shadow-indigo-500/20" />
                                                 </button>
                                                 <button onClick={() => addStockPhoto('https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400')} className="aspect-square bg-[#1e1e26] rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative">
                                                     <img src="https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=400" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" alt="Rec" />
                                                 </button>
-                                                <button onClick={addRect} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
+                                                <button onClick={addRect} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'rect')} className="aspect-square bg-[#1e1e26] rounded-xl flex items-center justify-center border border-zinc-800 hover:border-indigo-500 group">
                                                     <div className="w-10 h-10 rounded-2xl bg-zinc-700 border-2 border-zinc-500 group-hover:scale-110 transition-transform" />
                                                 </button>
                                             </div>
@@ -2129,7 +2349,7 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                         {activeElementsCategory === 'photos' && (
                                             <div className="grid grid-cols-2 gap-2.5">
                                                 {stockPhotos.map((url, i) => (
-                                                    <button key={i} onClick={() => addStockPhoto(url)} className="aspect-square rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 transition-all group">
+                                                    <button key={i} onClick={() => addStockPhoto(url)} draggable onDragStart={(e) => { e.dataTransfer.setData('fabricType', 'photo'); e.dataTransfer.setData('fabricUrl', url); }} className="aspect-square rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 transition-all group">
                                                         <img src={url} alt="stock" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
                                                     </button>
                                                 ))}
@@ -2203,7 +2423,7 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
 
                                 {/* Primary Actions */}
                                 <div className="space-y-2 relative">
-                                    <button onClick={addHeading} className="w-full py-2.5 bg-[#8b3dff] hover:bg-[#7b2cfa] border border-[#7b2cfa] rounded-xl flex flex-col items-center justify-center transition-all shadow-md group">
+                                    <button onClick={addHeading} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'heading')} className="w-full py-2.5 bg-[#8b3dff] hover:bg-[#7b2cfa] border border-[#7b2cfa] rounded-xl flex flex-col items-center justify-center transition-all shadow-md group">
                                         <span className="font-bold text-[13px] text-white group-hover:scale-[1.02] transition-transform">Add a text box</span>
                                     </button>
                                     <button onClick={() => setIsMagicWriteOpen(!isMagicWriteOpen)} className="w-full py-2 bg-[#1e1e26] border border-zinc-800 hover:bg-[#252530] hover:border-[#8b3dff]/30 rounded-xl flex items-center justify-center gap-2 transition-all group">
@@ -2243,13 +2463,13 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                 <div>
                                     <h4 className="text-[11px] font-bold text-zinc-400 mb-2 px-1">Default text styles</h4>
                                     <div className="space-y-1">
-                                        <button onClick={addHeading} className="w-full px-3 py-3 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                        <button onClick={addHeading} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'heading')} className="w-full px-3 py-3 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
                                             <span className="font-black text-2xl text-white tracking-tight">Add a heading</span>
                                         </button>
-                                        <button onClick={addSubheading} className="w-full px-3 py-2.5 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                        <button onClick={addSubheading} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'subheading')} className="w-full px-3 py-2.5 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
                                             <span className="font-bold text-lg text-zinc-200">Add a subheading</span>
                                         </button>
-                                        <button onClick={addBodyText} className="w-full px-3 py-2 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
+                                        <button onClick={addBodyText} draggable onDragStart={(e) => e.dataTransfer.setData('fabricType', 'bodytext')} className="w-full px-3 py-2 bg-transparent hover:bg-[#1e1e26] rounded-xl flex items-center transition-all group">
                                             <span className="font-medium text-sm text-zinc-400">Add a little bit of body text</span>
                                         </button>
                                     </div>
@@ -2306,38 +2526,6 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                                         <div onClick={() => addFontPreset('dapper')} className="col-span-2 h-20 bg-[#18181b] rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:border-zinc-700 hover:scale-[1.02] transition-all group">
                                             <span className="font-serif text-lg font-normal text-white uppercase tracking-[0.2em]">Dapper</span>
                                         </div>
-                                        <div onClick={() => addFontPreset('sweet')} className="h-24 bg-[#fdf2f8] rounded-xl flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
-                                            <span className="font-serif text-3xl font-bold text-pink-500 italic drop-shadow-[0_4px_10px_rgba(244,114,182,0.3)]">Sweet</span>
-                                            <span className="font-sans text-[9px] font-black text-black tracking-[0.2em] uppercase mt-0.5">TREATS</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('wild_sale')} className="h-24 bg-yellow-400 rounded-xl border-2 border-black flex flex-col items-center justify-center hover:scale-[1.02] transition-all cursor-pointer group">
-                                            <span className="font-sans text-2xl font-black text-white px-1 relative -top-1 shadow-black shadow-[2px_2px_0_0_#000] -rotate-3">WILD</span>
-                                            <span className="font-sans text-2xl font-black text-red-500 px-1 relative shadow-black shadow-[2px_2px_0_0_#000] rotate-3">SALE</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('spring_collection')} className="col-span-2 h-24 bg-emerald-900 rounded-xl flex items-center justify-center flex-col cursor-pointer hover:scale-[1.02] transition-all shadow-lg group">
-                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em]">SPRING</span>
-                                            <span className="font-sans text-xs font-normal text-emerald-200 tracking-[0.3em] mt-1">COLLECTION</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('hustle')} className="h-24 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
-                                            <span className="font-sans text-xl font-bold text-white drop-shadow-[4px_4px_0_#ea580c] -skew-x-12">HUSTLE</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('tattoo_studio')} className="h-24 bg-zinc-900 rounded-xl border border-zinc-700 flex flex-col items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group">
-                                            <span className="font-serif text-2xl font-bold text-white italic">Tattoo</span>
-                                            <span className="font-mono text-[9px] font-bold text-zinc-400 tracking-widest mt-1">STUDIO</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('talk_to_us')} className="col-span-2 h-20 bg-blue-600 rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] hover:bg-blue-500 transition-all shadow-lg group">
-                                            <span className="font-sans text-xl font-black text-white mr-1 -rotate-2 group-hover:rotate-0 transition-transform">TALK</span>
-                                            <span className="font-sans text-xl font-black text-black rotate-2 ml-1 group-hover:rotate-0 transition-transform">TO US</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('coming_soon')} className="h-20 bg-[#0f172a] rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border border-teal-900/50">
-                                            <span className="font-mono text-xs font-bold text-teal-400 tracking-widest drop-shadow-[0_0_8px_rgba(20,184,166,0.8)]">COMING SOON</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('play')} className="h-20 bg-white rounded-xl flex items-center justify-center cursor-pointer hover:scale-[1.02] transition-all group border-b-4 border-r-4 border-black">
-                                            <span className="font-sans text-xl font-black text-purple-500 drop-shadow-[-3px_3px_0_#3b82f6]">PLAY</span>
-                                        </div>
-                                        <div onClick={() => addFontPreset('dapper')} className="col-span-2 h-20 bg-[#18181b] rounded-xl border border-zinc-800 flex items-center justify-center cursor-pointer hover:border-zinc-700 hover:scale-[1.02] transition-all group">
-                                            <span className="font-serif text-lg font-normal text-white uppercase tracking-[0.2em]">Dapper</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2345,122 +2533,723 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
 
                         {/* UPLOADS */}
                         {activeTab === 'uploads' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                <button onClick={() => fileInputRef.current?.click()}
-                                    className="w-full py-6 border-2 border-dashed border-indigo-500/50 hover:border-indigo-400 bg-indigo-500/5 hover:bg-indigo-500/10 rounded-2xl flex flex-col items-center gap-3 text-indigo-400 transition-all shadow-inner">
-                                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                                        <ImagePlus size={20} className="text-indigo-300" />
-                                    </div>
-                                    <div className="text-center">
-                                        <span className="text-xs font-bold text-white block">Upload Files</span>
-                                        <span className="text-[10px] text-zinc-500">Images, Videos or Audio</span>
-                                    </div>
-                                </button>
+                            <div className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300 h-full flex flex-col pt-1">
+                                <input type="file" ref={fileInputRef} accept="image/*,video/*,audio/*" className="hidden" onChange={handleImageUpload} />
 
-                                <div>
-                                    <h4 className="text-xs font-bold text-zinc-300 mb-3">Stock Inspiration</h4>
-                                    <div className="grid grid-cols-2 gap-2.5">
-                                        {stockPhotos.map((url, i) => (
-                                            <button key={i} onClick={() => addStockPhoto(url)}
-                                                className="aspect-square rounded-xl overflow-hidden border border-zinc-800 hover:border-indigo-400 focus:ring-2 focus:ring-indigo-500/50 transition-all group">
-                                                <img src={url} alt="stock" className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
-                                            </button>
-                                        ))}
+                                {/* Search Bar */}
+                                <div className="relative group">
+                                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-indigo-400 transition-colors" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search keywords, tags, colour"
+                                        className="w-full bg-[#1a1a22] border border-zinc-800 hover:border-zinc-700 focus:border-indigo-500/50 rounded-xl py-2.5 pl-10 pr-4 text-xs text-white placeholder:text-zinc-500 focus:outline-none transition-all shadow-sm"
+                                    />
+                                </div>
+
+                                {/* Primary Actions */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex-1 py-2.5 bg-[#8b3dff] hover:bg-[#7b2cfa] text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95"
+                                    >
+                                        Upload files
+                                    </button>
+                                    <button className="flex-1 py-2.5 bg-transparent border border-zinc-700/80 hover:bg-zinc-800/80 text-zinc-300 font-bold text-xs rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
+                                        <Monitor size={14} /> Record yourself
+                                    </button>
+                                </div>
+
+                                {/* Integrations Row */}
+                                <div className="flex items-center justify-between px-2 pt-1 pb-3 border-b border-zinc-800/60">
+                                    <button title="Google Drive" className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-sm">
+                                        <svg viewBox="0 0 48 48" className="w-4 h-4"><path fill="#FFC107" d="M17 5.8l-8 13.9 11 19.3 8-13.9z" /><path fill="#1976D2" d="M11 41.5L24 19l13 22.5H11z" /><path fill="#4CAF50" d="M39 41.5L28 22.5 17 5.8h11z" /></svg>
+                                    </button>
+                                    <button title="Dropbox" className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-sm text-white font-bold text-[10px]">Db</button>
+                                    <button title="Instagram" className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-sm text-white">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                                    </button>
+                                    <button title="Facebook" className="w-8 h-8 rounded-full bg-[#1877F2] flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-sm text-white font-bold text-xs">f</button>
+                                    <button title="Google Photos" className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-sm">
+                                        <div className="w-4 h-4 rounded-full border-4 border-blue-500 border-t-red-500 border-r-yellow-400 border-b-green-500 rotate-45" />
+                                    </button>
+                                    <button title="More options" className="w-8 h-8 rounded-full bg-[#1a1a22] border border-zinc-700 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer text-zinc-400 hover:text-white">
+                                        <MoreHorizontal size={14} />
+                                    </button>
+                                </div>
+
+                                {/* Background Remover Ad */}
+                                <div onClick={handleRemoveBackgroundEditor} className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-3 cursor-pointer hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-colors group">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                                        <Scissors size={14} className="text-emerald-400" />
                                     </div>
+                                    <div>
+                                        <p className="text-[11px] font-bold text-emerald-400">Instantly remove backgrounds</p>
+                                        <p className="text-[9px] text-zinc-400 mt-0.5 leading-relaxed">Select an image and use our Background Remover. <span className="text-white group-hover:underline">Try it now</span></p>
+                                    </div>
+                                </div>
+
+                                {/* Uploaded Grid */}
+                                <div className="flex-1 overflow-y-auto custom-scrollbar -mx-1 px-1 min-h-[300px]">
+                                    {uploadedFiles.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-70">
+                                            <div className="w-16 h-16 mb-4 rounded-full bg-zinc-800/50 flex items-center justify-center">
+                                                <ImagePlus size={24} className="text-zinc-500" />
+                                            </div>
+                                            <p className="text-xs font-bold text-zinc-300 mb-1">Your uploads will appear here</p>
+                                            <p className="text-[10px] text-zinc-500 mx-auto max-w-[200px]">Upload images, videos or audio to use them in your designs.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2 mt-2">
+                                            {uploadedFiles.map((url, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => addStockPhoto(url)}
+                                                    className="aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 hover:border-[#8b3dff] group relative"
+                                                >
+                                                    <img src={url} alt={`Upload ${i}`} className="w-full h-full object-cover group-hover:scale-105 opacity-90 group-hover:opacity-100 transition-all duration-300" loading="lazy" />
+                                                    <div className="absolute top-2 right-2 p-1 bg-black/60 backdrop-blur-sm rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <MoreHorizontal size={12} className="text-white" />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                            {stockPhotos.map((url, i) => (
+                                                <button
+                                                    key={`stock-${i}`}
+                                                    onClick={() => addStockPhoto(url)}
+                                                    className="aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 hover:border-[#8b3dff] group relative"
+                                                >
+                                                    <img src={url} alt={`Stock ${i}`} className="w-full h-full object-cover group-hover:scale-105 opacity-90 group-hover:opacity-100 transition-all duration-300" loading="lazy" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
 
                         {/* BRAND KIT */}
                         {activeTab === 'brand' && (
-                            <div className="space-y-6 flex flex-col items-center text-center py-6 px-2 animate-in fade-in slide-in-from-bottom-5">
-                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-yellow-400 to-amber-600 flex items-center justify-center p-1 mb-2 shadow-[0_10px_30px_rgba(251,191,36,0.2)]">
-                                    <div className="w-full h-full bg-[#121216] rounded-xl flex items-center justify-center">
-                                        <Palette size={28} className="text-yellow-500" />
+                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300 relative h-full flex flex-col">
+                                {!activeBrandCategory ? (
+                                    <>
+                                        <div className="flex items-center gap-2 mb-4 px-1 mt-4">
+                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-yellow-400 to-amber-600 flex items-center justify-center p-[1px]">
+                                                <div className="w-full h-full bg-[#121216] rounded-[7px] flex items-center justify-center">
+                                                    <Palette size={16} className="text-yellow-500" />
+                                                </div>
+                                            </div>
+                                            <h3 className="font-bold text-white text-sm">Brand Hub</h3>
+                                        </div>
+
+                                        <div className="space-y-1 overflow-y-auto pb-20 pr-1 custom-scrollbar">
+                                            {brandCategories.map((cat) => (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => setActiveBrandCategory(cat.id)}
+                                                    className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-zinc-800/80 text-sm font-semibold text-zinc-300 hover:text-white transition-colors flex justify-between items-center group"
+                                                >
+                                                    {cat.label}
+                                                    <ChevronDown size={14} className="text-zinc-600 group-hover:text-zinc-400 -rotate-90 transition-transform" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300 mt-4">
+                                        <button
+                                            onClick={() => setActiveBrandCategory(null)}
+                                            className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 hover:text-white mb-4 transition-colors"
+                                        >
+                                            <ArrowLeft size={14} /> Back to Brand Hub
+                                        </button>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="text-sm font-bold text-white capitalize">{brandCategories.find(c => c.id === activeBrandCategory)?.label}</h4>
+                                        </div>
+
+                                        <div className="overflow-y-auto pb-20 pr-1 custom-scrollbar -mx-1 px-1">
+                                            {activeBrandCategory === 'colours' && (
+                                                <div className="grid grid-cols-5 gap-2">
+                                                    {brandMockData.colours.map((color, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => {
+                                                                const obj = fabricCanvasRef.current?.getActiveObject();
+                                                                if (obj && (obj.type === 'i-text' || obj.type === 'rect' || obj.type === 'circle' || obj.type === 'triangle' || obj.type === 'polygon' || obj.type === 'path')) {
+                                                                    obj.set('fill', color);
+                                                                    fabricCanvasRef.current?.renderAll();
+                                                                    pushHistory();
+                                                                } else {
+                                                                    applySmartBackground(color, false);
+                                                                }
+                                                            }}
+                                                            style={{ backgroundColor: color }}
+                                                            className="aspect-square rounded-full border border-zinc-700 hover:scale-110 transition-transform shadow-sm flex items-center justify-center opacity-90 hover:opacity-100 group"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'logos' && (
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {brandMockData.logos.map((url, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addSvgGraphic(url)}
+                                                            className="aspect-video bg-[#1a1a22] rounded-xl border border-zinc-800 hover:border-indigo-500/50 flex items-center justify-center p-2 group transition-all"
+                                                        >
+                                                            <img
+                                                                src={url}
+                                                                alt={`Logo ${i + 1}`}
+                                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                                                loading="lazy"
+                                                            />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'photos' && (
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {brandMockData.photos.map((url, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addStockPhoto(url)}
+                                                            className="aspect-square bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-indigo-500 group relative"
+                                                        >
+                                                            <img src={url} alt={`Photo ${i}`} className="w-full h-full object-cover group-hover:scale-110 opacity-80 group-hover:opacity-100 transition-all duration-300" loading="lazy" />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'templates' && (
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {brandMockData.templates.map((url, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addStockPhoto(url)}
+                                                            className="relative aspect-[3/4] bg-[#1e1e26] rounded-xl overflow-hidden group border border-zinc-800 hover:border-indigo-500 transition-all shadow-sm"
+                                                        >
+                                                            <img src={url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" alt="Template" loading="lazy" />
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'fonts' && (
+                                                <div className="flex flex-col gap-2">
+                                                    {brandMockData.fonts.map((f, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => {
+                                                                const t = new (fabric as any).IText(f.label, { left: (canvasWidth || 1080) / 2 - 100, top: (canvasHeight || 1080) / 2, fontSize: 32, fontFamily: f.family, fontWeight: f.weight, fill: '#000' });
+                                                                addObj(t);
+                                                            }}
+                                                            className="w-full py-3 px-4 bg-[#1a1a22] border border-zinc-800 hover:border-indigo-500 rounded-xl text-left transition-all group overflow-hidden relative"
+                                                        >
+                                                            <span className="text-xs font-bold text-zinc-500 block mb-1 uppercase tracking-wider">{f.label}</span>
+                                                            <span className="text-xl text-white block group-hover:scale-[1.02] transition-transform origin-left" style={{ fontFamily: f.family, fontWeight: f.weight }}>The quick brown fox</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'icons' && (
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {brandMockData.icons.map((svgStr, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addSvgGraphicString(svgStr)}
+                                                            className="aspect-square bg-[#1a1a22] border border-zinc-800 hover:border-indigo-500 rounded-xl flex items-center justify-center group transition-colors text-white hover:text-indigo-400"
+                                                            dangerouslySetInnerHTML={{ __html: svgStr.replace('<svg', '<svg class="w-6 h-6 transform group-hover:scale-110 transition-transform"') }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'graphics' && (
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {brandMockData.graphics.map((svgStr, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addSvgGraphicString(svgStr)}
+                                                            className="aspect-square bg-[#1a1a22] border border-zinc-800 hover:border-indigo-500 rounded-xl flex items-center justify-center p-2 group transition-all"
+                                                            dangerouslySetInnerHTML={{ __html: svgStr.replace('<svg', '<svg class="w-full h-full transform group-hover:scale-110 transition-transform"') }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'charts' && (
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {brandMockData.charts.map((svgStr, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => addSvgGraphicString(svgStr)}
+                                                            className="aspect-square bg-white border border-zinc-800 hover:border-indigo-500 rounded-xl flex items-center justify-center p-2 group transition-all"
+                                                            dangerouslySetInnerHTML={{ __html: svgStr.replace('<svg', '<svg class="w-full h-full transform group-hover:scale-110 transition-transform"') }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {activeBrandCategory === 'components' && (
+                                                <div className="flex flex-col gap-2">
+                                                    {brandMockData.components.map((c, i) => (
+                                                        <button
+                                                            key={i}
+                                                            onClick={() => {
+                                                                const rect = new (fabric as any).Rect({ width: 120, height: 40, fill: c.color, rx: 8, originX: 'center', originY: 'center' });
+                                                                const text = new (fabric as any).IText(c.label, { fontSize: 16, fontFamily: 'Inter', fill: '#ffffff', fontWeight: 'bold', originX: 'center', originY: 'center' });
+                                                                const group = new (fabric as any).Group([rect, text], { left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' });
+                                                                addObj(group);
+                                                            }}
+                                                            className="w-full py-3 px-4 bg-[#1a1a22] border border-zinc-800 hover:border-indigo-500 rounded-xl transition-all flex items-center gap-3 relative overflow-hidden"
+                                                        >
+                                                            <div className="w-full flex items-center gap-3 pointer-events-none">
+                                                                <div className="w-16 h-8 rounded shrink-0 flex items-center justify-center" style={{ backgroundColor: c.color }}>
+                                                                    <span className="text-[10px] font-bold text-white uppercase">{c.label}</span>
+                                                                </div>
+                                                                <div className="flex flex-col items-start gap-1">
+                                                                    <div className="w-24 h-1.5 bg-zinc-700 rounded-full" />
+                                                                    <div className="w-16 h-1.5 bg-zinc-800 rounded-full" />
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {/* Fallback for others */}
+                                            {['all', 'guidelines', 'voice'].includes(activeBrandCategory) && (
+                                                <div className="p-8 text-center border-2 border-dashed border-zinc-800 rounded-xl bg-white/[0.02] mt-4">
+                                                    <Sparkles size={24} className="mx-auto text-indigo-400 mb-2 opacity-50" />
+                                                    <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">Use the brand hub to keep everything on-brand. Click other categories to see richer mock data in action.</p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <h4 className="text-base font-extrabold text-white mb-2 tracking-wide">Brand Kit</h4>
-                                    <p className="text-xs text-zinc-400 leading-relaxed max-w-[240px] mx-auto font-medium">Keep your brand consistent. Upload your logos, fonts, and custom color palettes for instant access.</p>
-                                </div>
-                                <button className="w-full mt-4 py-3 bg-white hover:bg-zinc-200 text-black rounded-xl text-xs font-bold transition-all shadow-xl hover:scale-[1.02]">
-                                    Set up your Brand Kit
-                                </button>
+                                )}
                             </div>
                         )}
 
-                        {/* PRO TOOLS */}
+                        {/* PRO TOOLS (Vertical Floating Toolbar + Flyouts) */}
                         {activeTab === 'tools' && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div>
-                                    <h4 className="text-xs font-bold text-zinc-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                                        <Sparkles size={14} className="text-purple-400" /> Magic Studio Tools
-                                    </h4>
-                                    <button onClick={() => alert('Magic Write initialized.')} className="w-full p-5 bg-gradient-to-br from-purple-900/40 to-indigo-900/40 border border-purple-500/30 hover:border-purple-400/50 rounded-2xl flex flex-col items-center gap-3 transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] group text-center mb-3">
-                                        <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                            <Wand2 size={24} className="text-purple-300 group-hover:scale-110 transition-transform" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-purple-100">Magic Write</h4>
-                                            <p className="text-[11px] text-purple-300/70 mt-1 font-medium">Generate amazing typography & copy</p>
-                                        </div>
+                            <div className="relative h-full flex flex-row animate-in fade-in slide-in-from-left-4 duration-300">
+                                {/* Vertical Toolbar */}
+                                <div className="w-16 bg-[#1a1a22] border-r border-zinc-800 flex flex-col items-center py-4 gap-4 overflow-y-auto custom-scrollbar shadow-none z-20">
+                                    <button onClick={() => { setActiveToolFlyout(null); if (fabricCanvasRef.current) fabricCanvasRef.current.isDrawingMode = false; }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${!activeToolFlyout ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Pointer / Select Tool">
+                                        <MousePointer2 size={18} />
+                                    </button>
+                                    <button onClick={() => setActiveToolFlyout('draw')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeToolFlyout === 'draw' ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Draw / Sketch Tool">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-[18px] h-[18px] ${activeToolFlyout === 'draw' ? 'text-white' : 'text-red-400'}`}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                    </button>
+                                    <button onClick={() => setActiveToolFlyout('shapes')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeToolFlyout === 'shapes' ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Shapes Tool">
+                                        <div className="relative w-[18px] h-[18px]"><Square size={14} className="absolute top-0 left-0 fill-zinc-900" /><CircleIcon size={14} className="absolute bottom-0 right-0 fill-zinc-900" /></div>
+                                    </button>
+                                    <button onClick={() => setActiveToolFlyout('line')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeToolFlyout === 'line' ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Line Tool">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-[18px] h-[18px] ${activeToolFlyout === 'line' ? 'text-white' : 'text-blue-400'}`}><line x1="5" y1="19" x2="19" y2="5"></line></svg>
+                                    </button>
+                                    <button onClick={() => setActiveToolFlyout('sticky')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeToolFlyout === 'sticky' ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Sticky Note Tool">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-[18px] h-[18px] ${activeToolFlyout === 'sticky' ? 'text-white' : 'text-yellow-400'}`}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    </button>
+                                    <button onClick={() => { setActiveToolFlyout(null); const t = new (fabric as any).IText('Heading', { left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, fontSize: 64, fill: '#000', fontFamily: 'Inter', fontWeight: 'bold', originX: 'center', originY: 'center' }); addObj(t); }} className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:bg-zinc-800/80 hover:text-white transition-all shadow-sm" title="Text Tool">
+                                        <Type size={18} className="text-purple-400" />
+                                    </button>
+                                    <button onClick={() => setActiveToolFlyout('signature')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${activeToolFlyout === 'signature' ? 'bg-[#8b3dff] text-white shadow-lg' : 'text-zinc-400 hover:bg-zinc-800/80 hover:text-white'}`} title="Signature Tool">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]"><path d="M22 13c-4.5-9-15.5-9-20 0"></path><path d="M2 11c4.5-9 15.5-9 20 0"></path></svg>
+                                    </button>
+                                    <button onClick={() => { setActiveToolFlyout(null); const w = 300, h = 150; const r1 = new (fabric as any).Rect({ width: w, height: h, fill: 'transparent', stroke: '#ccc', strokeWidth: 2, originX: 'center', originY: 'center' }); const l1 = new (fabric as any).Line([-w / 2, 0, w / 2, 0], { stroke: '#ccc', strokeWidth: 2, originX: 'center', originY: 'center' }); const l2 = new (fabric as any).Line([0, -h / 2, 0, h / 2], { stroke: '#ccc', strokeWidth: 2, originX: 'center', originY: 'center' }); const group = new (fabric as any).Group([r1, l1, l2], { left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' }); addObj(group); }} className="w-10 h-10 rounded-xl flex items-center justify-center text-zinc-400 hover:bg-zinc-800/80 hover:text-white transition-all shadow-sm" title="Table Tool">
+                                        <Grid3X3 size={18} />
                                     </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={handleRemoveBackgroundEditor} className="p-4 bg-[#1e1e26] border border-zinc-800 hover:border-emerald-500/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633]">
-                                        <Scissors size={20} className="text-emerald-400" />
-                                        <span className="text-[10px] font-bold text-zinc-300 text-center">BG Remover</span>
-                                    </button>
-                                    <button className="p-4 bg-[#1e1e26] border border-zinc-800 hover:border-blue-500/50 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all hover:bg-[#262633]">
-                                        <LayersIcon size={20} className="text-blue-400" />
-                                        <span className="text-[10px] font-bold text-zinc-300 text-center">Magic Morph</span>
-                                    </button>
-                                </div>
+                                {/* Flyout Panel */}
+                                {activeToolFlyout && (
+                                    <div className="absolute left-[70px] top-4 w-60 bg-[#262633] rounded-2xl border border-zinc-700 shadow-2xl p-4 animate-in fade-in slide-in-from-left-4 z-10 max-h-[80%] overflow-y-auto">
+                                        {/* DRAW FLYOUT */}
+                                        {activeToolFlyout === 'draw' && (
+                                            <div className="space-y-4">
+                                                <h4 className="text-xs font-bold text-white mb-2">Drawing Tools</h4>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    <button onClick={() => { if (fabricCanvasRef.current) { fabricCanvasRef.current.isDrawingMode = true; fabricCanvasRef.current.freeDrawingBrush = new (fabric as any).PencilBrush(fabricCanvasRef.current); fabricCanvasRef.current.freeDrawingBrush.color = '#ff0000'; fabricCanvasRef.current.freeDrawingBrush.width = 2; } }} className="aspect-square bg-[#1a1a22] border border-zinc-700 hover:border-[#8b3dff] rounded-lg flex items-center justify-center group" title="Pen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+                                                    <button onClick={() => { if (fabricCanvasRef.current) { fabricCanvasRef.current.isDrawingMode = true; fabricCanvasRef.current.freeDrawingBrush = new (fabric as any).PencilBrush(fabricCanvasRef.current); fabricCanvasRef.current.freeDrawingBrush.color = '#000000'; fabricCanvasRef.current.freeDrawingBrush.width = 8; } }} className="aspect-square bg-[#1a1a22] border border-zinc-700 hover:border-[#8b3dff] rounded-lg flex items-center justify-center group" title="Marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-5 h-5 text-zinc-300 group-hover:scale-110 transition-transform"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+                                                    <button onClick={() => { if (fabricCanvasRef.current) { fabricCanvasRef.current.isDrawingMode = true; fabricCanvasRef.current.freeDrawingBrush = new (fabric as any).PencilBrush(fabricCanvasRef.current); fabricCanvasRef.current.freeDrawingBrush.color = 'rgba(255, 255, 0, 0.4)'; fabricCanvasRef.current.freeDrawingBrush.width = 25; } }} className="aspect-square bg-[#1a1a22] border border-zinc-700 hover:border-[#8b3dff] rounded-lg flex items-center justify-center group" title="Highlighter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5 text-yellow-500 bg-yellow-500 rounded px-0.5 group-hover:scale-110 transition-transform"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>
+                                                    <button onClick={() => { if (fabricCanvasRef.current) { fabricCanvasRef.current.isDrawingMode = false; /* Implement custom Eraser by setting cursor to crosshair and listening for object clicks to remove if they are paths. For now, disable draw mode. */ } }} className="aspect-square bg-[#1a1a22] border border-zinc-700 hover:border-[#8b3dff] rounded-lg flex items-center justify-center group" title="Eraser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-pink-400 group-hover:scale-110 transition-transform"><path d="M2.5 8.5h19m-19 0v-4h19v4m-19 0 3 14h13l3-14"></path></svg></button>
+                                                </div>
+                                                <div className="mt-4">
+                                                    <label className="text-[10px] font-bold text-zinc-400 block mb-2 uppercase tracking-wide">Thickness</label>
+                                                    <input type="range" min="1" max="50" defaultValue="4" className="w-full accent-[#8b3dff]" onChange={(e) => { if (fabricCanvasRef.current && fabricCanvasRef.current.isDrawingMode) fabricCanvasRef.current.freeDrawingBrush.width = parseInt(e.target.value); }} />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* SHAPES FLYOUT */}
+                                        {activeToolFlyout === 'shapes' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs font-bold text-white mb-2">Shapes</h4>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[
+                                                        { type: 'rect', icon: <Square size={16} /> },
+                                                        { type: 'square', icon: <Square size={16} fill="currentColor" /> },
+                                                        { type: 'circle', icon: <CircleIcon size={16} /> },
+                                                        { type: 'triangle', icon: <TriangleIcon size={16} /> },
+                                                        { type: 'inverted-triangle', icon: <TriangleIcon size={16} className="rotate-180" /> },
+                                                        { type: 'star', icon: <Star size={16} /> },
+                                                        { type: 'pentagon', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="12 2 22 8.5 18.2 22 5.8 22 2 8.5" /></svg> },
+                                                        { type: 'hexagon', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polygon points="12 2 22 7 22 17 12 22 2 17 2 7" /></svg> },
+                                                    ].map((s, i) => (
+                                                        <button key={i} onClick={() => {
+                                                            let obj;
+                                                            if (s.type === 'rect') obj = new (fabric as any).Rect({ width: 200, height: 100, fill: '#6366f1' });
+                                                            else if (s.type === 'square') obj = new (fabric as any).Rect({ width: 150, height: 150, fill: '#ec4899' });
+                                                            else if (s.type === 'circle') obj = new (fabric as any).Circle({ radius: 75, fill: '#10b981' });
+                                                            else if (s.type === 'triangle') obj = new (fabric as any).Triangle({ width: 150, height: 150, fill: '#f59e0b' });
+                                                            else if (s.type === 'inverted-triangle') obj = new (fabric as any).Triangle({ width: 150, height: 150, fill: '#a855f7', angle: 180 });
+                                                            else if (s.type === 'star') obj = new (fabric as any).Polygon([{ x: 100, y: 10 }, { x: 40, y: 198 }, { x: 190, y: 78 }, { x: 10, y: 78 }, { x: 160, y: 198 }], { fill: '#ef4444' });
+                                                            else if (s.type === 'pentagon') obj = new (fabric as any).Polygon([{ x: 50, y: 5 }, { x: 95, y: 35 }, { x: 80, y: 95 }, { x: 20, y: 95 }, { x: 5, y: 35 }], { fill: '#3b82f6', scaleX: 1.5, scaleY: 1.5 });
+                                                            else if (s.type === 'hexagon') obj = new (fabric as any).Polygon([{ x: 25, y: 5 }, { x: 75, y: 5 }, { x: 100, y: 50 }, { x: 75, y: 95 }, { x: 25, y: 95 }, { x: 0, y: 50 }], { fill: '#14b8a6', scaleX: 1.5, scaleY: 1.5 });
+
+                                                            if (obj) { obj.set({ left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' }); addObj(obj); setActiveToolFlyout(null); }
+                                                        }} className="aspect-square bg-[#1a1a22] border border-zinc-700 hover:border-white rounded text-zinc-300 hover:text-white flex items-center justify-center transition-all shadow-sm">
+                                                            {s.icon}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* LINE FLYOUT */}
+                                        {activeToolFlyout === 'line' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs font-bold text-white mb-2">Lines</h4>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button onClick={() => { addObj(new (fabric as any).Line([-100, 0, 100, 0], { stroke: '#000', strokeWidth: 8, left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' })); setActiveToolFlyout(null); }} className="p-3 bg-[#1a1a22] border border-zinc-700 hover:border-white rounded flex items-center justify-center group" title="Straight Line">
+                                                        <Minus size={24} className="group-hover:scale-110 transition-transform" />
+                                                    </button>
+                                                    <button onClick={() => { addObj(new (fabric as any).Path('M -100 0 Q 0 -50 100 0', { fill: '', stroke: '#000', strokeWidth: 8, left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' })); setActiveToolFlyout(null); }} className="p-3 bg-[#1a1a22] border border-zinc-700 hover:border-white rounded flex items-center justify-center group" title="Curved Line">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 group-hover:scale-110 transition-transform"><path d="M4 14c4-7.33 10-7.33 14 0" /></svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* STICKY NOTE FLYOUT */}
+                                        {activeToolFlyout === 'sticky' && (
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs font-bold text-white mb-2">Sticky Notes</h4>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    {['#fef3c7', '#ffedd5', '#fce7f3', '#dbeafe', '#d1fae5', '#e0e7ff'].map((color, i) => (
+                                                        <button key={i} onClick={() => {
+                                                            const rect = new (fabric as any).Rect({ width: 200, height: 200, fill: color, rx: 8, originX: 'center', originY: 'center', shadow: new (fabric as any).Shadow({ color: 'rgba(0,0,0,0.2)', blur: 15, offsetX: 0, offsetY: 10 }) });
+                                                            const text = new (fabric as any).IText('Idea', { fontSize: 24, fill: '#374151', fontFamily: 'Inter', originX: 'center', originY: 'center' });
+                                                            const group = new (fabric as any).Group([rect, text], { left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' });
+                                                            addObj(group);
+                                                            setActiveToolFlyout(null);
+                                                        }} className="aspect-square rounded shadow-sm hover:scale-110 transition-transform flex items-center justify-center border border-black/5" style={{ backgroundColor: color }}>
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.5" className="w-5 h-5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* SIGNATURE FLYOUT */}
+                                        {activeToolFlyout === 'signature' && (
+                                            <div className="space-y-4 w-60">
+                                                <h4 className="text-xs font-bold text-white mb-2">Create Signature</h4>
+
+                                                {/* Tabs */}
+                                                <div className="flex bg-[#1a1a22] rounded-lg p-1">
+                                                    <button onClick={() => setSignatureTab('text')} className={`flex-1 text-[10px] py-1.5 rounded-md font-bold transition-all ${signatureTab === 'text' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Text</button>
+                                                    <button onClick={() => setSignatureTab('draw')} className={`flex-1 text-[10px] py-1.5 rounded-md font-bold transition-all ${signatureTab === 'draw' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Draw</button>
+                                                    <button onClick={() => setSignatureTab('upload')} className={`flex-1 text-[10px] py-1.5 rounded-md font-bold transition-all ${signatureTab === 'upload' ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}>Upload</button>
+                                                </div>
+
+                                                {/* Content block based on active tab */}
+                                                {signatureTab === 'text' && (
+                                                    <div className="space-y-3">
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-zinc-400 block mb-1">Name</label>
+                                                            <input type="text" value={signatureText} onChange={(e) => setSignatureText(e.target.value)} className="w-full bg-[#1a1a22] border border-zinc-700 rounded-lg p-2 text-xs text-white outline-none focus:border-[#8b3dff]" placeholder="Type your name..." />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-zinc-400 block mb-1">Font Family</label>
+                                                            <div className="relative">
+                                                                <select value={signatureFont} onChange={(e) => setSignatureFont(e.target.value)} className="w-full bg-[#1a1a22] border border-zinc-700 rounded-lg p-2 text-xs text-white outline-none focus:border-[#8b3dff] appearance-none">
+                                                                    <option value="Caveat">Caveat</option>
+                                                                    <option value="Pacifico">Pacifico</option>
+                                                                    <option value="Dancing Script">Dancing Script</option>
+                                                                    <option value="Inter">Inter</option>
+                                                                </select>
+                                                                <ChevronDown size={14} className="absolute right-2 top-2 text-zinc-500 pointer-events-none" />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-zinc-400 block mb-1">Color</label>
+                                                            <div className="flex gap-2">
+                                                                {['#ffffff', '#000000', '#2563eb', '#dc2626', '#16a34a'].map(c => (
+                                                                    <button key={c} onClick={() => setSignatureColor(c)} className={`w-6 h-6 rounded-full border-2 ${signatureColor === c ? 'border-[#8b3dff]' : 'border-zinc-700'}`} style={{ backgroundColor: c }}></button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <button onClick={() => {
+                                                            const t = new (fabric as any).IText(signatureText || 'Signature', { left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, fontSize: 64, fill: signatureColor, fontFamily: signatureFont, fontStyle: 'italic', originX: 'center', originY: 'center' });
+                                                            addObj(t);
+                                                            setActiveToolFlyout(null);
+                                                        }} className="w-full bg-[#8b3dff] hover:bg-[#7b32e6] text-white text-xs font-bold py-2.5 rounded-xl transition-colors mt-2">
+                                                            Add signature
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {signatureTab === 'draw' && (
+                                                    <div className="space-y-3">
+                                                        <div className="w-full h-32 bg-white rounded-lg border border-zinc-700 relative overflow-hidden flex items-center justify-center">
+                                                            <span className="text-zinc-300 text-xs font-medium">Draw here...</span>
+                                                            <div className="absolute inset-0 z-10 cursor-crosshair" onPointerDown={() => console.log('Drawing initialized for signature')} />
+                                                        </div>
+                                                        <button onClick={() => {
+                                                            const path = new (fabric as any).Path('M 0 50 Q 20 40 40 30 T 80 40 T 120 50 T 160 20', { fill: '', stroke: '#000', strokeWidth: 3, left: (canvasWidth || 1080) / 2, top: (canvasHeight || 1080) / 2, originX: 'center', originY: 'center' });
+                                                            addObj(path);
+                                                            setActiveToolFlyout(null);
+                                                        }} className="w-full bg-[#8b3dff] hover:bg-[#7b32e6] text-white text-xs font-bold py-2.5 rounded-xl transition-colors mt-2">
+                                                            Add signature
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {signatureTab === 'upload' && (
+                                                    <div className="space-y-3">
+                                                        <div className="w-full h-32 border-2 border-dashed border-zinc-700 rounded-lg flex flex-col items-center justify-center text-zinc-500 hover:text-white hover:border-[#8b3dff] transition-all cursor-pointer bg-[#1a1a22]">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-2 w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                            <span className="text-xs font-bold">Upload image</span>
+                                                        </div>
+                                                        <button className="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-xs font-bold py-2.5 rounded-xl transition-colors mt-2 opacity-50 cursor-not-allowed">
+                                                            Add signature
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* PROJECTS */}
                         {activeTab === 'projects' && (
-                            <div className="space-y-6 pt-4 text-center animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div className="w-16 h-16 rounded-full bg-zinc-800/50 mx-auto flex items-center justify-center border border-zinc-700/50 mb-4 shadow-inner">
-                                    <LayersIcon size={28} className="text-indigo-400" />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-white mb-2">Projects & Designs</h4>
-                                    <p className="text-xs text-zinc-400 leading-relaxed font-medium">Organize your workflow. Search your folders, previous designs, and imported assets.</p>
-                                </div>
-                                <div className="text-left space-y-2 mt-6">
-                                    <button className="w-full p-3.5 bg-[#1e1e26] hover:bg-[#262633] border border-zinc-800 rounded-xl flex items-center gap-3 transition-colors shadow-sm">
-                                        <div className="w-9 h-9 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 shrink-0"><Plus size={16} /></div>
-                                        <div>
-                                            <span className="text-xs font-bold text-zinc-200 block">Create folder</span>
-                                            <span className="text-[9px] text-zinc-500">Organize your elements</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* APPS */}
-                        {activeTab === 'apps' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div>
-                                    <h4 className="text-xs font-bold text-zinc-300 mb-3">Popular Integrations</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {[
-                                            { n: 'Typecraft', c: 'from-orange-500 to-red-500' },
-                                            { n: 'Mockups', c: 'from-emerald-400 to-teal-600' },
-                                            { n: 'QR Code', c: 'from-zinc-700 to-zinc-900' },
-                                            { n: 'Drive', c: 'from-blue-500 to-indigo-600' }
-                                        ].map((a, i) => (
-                                            <button key={i} className="aspect-square bg-[#1e1e26] hover:bg-[#262633] border border-zinc-800 hover:border-zinc-700 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all shadow-sm">
-                                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${a.c} flex items-center justify-center text-white font-black text-xl shadow-lg ring-1 ring-white/20`}>{a.n[0]}</div>
-                                                <span className="text-[11px] font-bold text-zinc-300">{a.n}</span>
+                            <div className="h-full flex flex-col animate-in fade-in slide-in-from-left-4 duration-300">
+                                {/* Top Navigation & Filter Tabs */}
+                                <div className="p-4 border-b border-zinc-800 space-y-4 shrink-0">
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                                        <input type="text" placeholder="Search your content" className="w-full bg-[#1a1a22] border border-zinc-700 rounded-lg pl-9 pr-4 py-2 text-xs text-white outline-none focus:border-[#8b3dff] transition-colors" />
+                                    </div>
+                                    <div className="flex bg-[#1a1a22] rounded-lg p-1">
+                                        {(['all', 'designs', 'folders'] as const).map(tab => (
+                                            <button key={tab} onClick={() => { setActiveProjectsFilter(tab); setActiveFolder(null); }} className={`flex-1 text-[11px] py-1.5 rounded-md font-bold capitalize transition-all ${activeProjectsFilter === tab ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                                                {tab}
                                             </button>
                                         ))}
                                     </div>
+                                </div>
+
+                                {/* Scrollable Content */}
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 relative">
+                                    {activeFolder ? (
+                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                            <div className="flex items-center gap-2 mb-6 cursor-pointer" onClick={() => setActiveFolder(null)}>
+                                                <button className="w-8 h-8 rounded-full hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
+                                                    <ArrowLeft size={16} />
+                                                </button>
+                                                <h4 className="text-sm font-bold text-white truncate">{activeFolder === 'Starred' ? 'Starred' : (savedFolders.find(f => f.id === activeFolder)?.name || 'Folder')}</h4>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                                <button onClick={() => {
+                                                    if (fabricCanvasRef.current) {
+                                                        fabricCanvasRef.current.clear();
+                                                    }
+                                                    setActiveProjectId(null);
+                                                }} className="bg-[#8b3dff] hover:bg-[#7b32e6] text-white p-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all shadow-sm group">
+                                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <Plus size={16} />
+                                                    </div>
+                                                    <span className="text-xs font-bold">Add design</span>
+                                                </button>
+                                                <button onClick={() => folderUploadInputRef.current?.click()} className="bg-[#1a1a22] border border-zinc-700 hover:border-zinc-500 text-white p-3 rounded-xl flex flex-col items-center justify-center gap-2 transition-all group">
+                                                    <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                                    </div>
+                                                    <span className="text-xs font-bold">Upload</span>
+                                                </button>
+                                                <input type="file" className="hidden" ref={folderUploadInputRef} onChange={handleFolderImageUpload} accept="image/*" />
+                                            </div>
+
+                                            {(() => {
+                                                const folderProjects = savedProjects.filter(p => p.folderId === activeFolder);
+                                                return folderProjects.length > 0 ? (
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {folderProjects.map((proj, i) => (
+                                                            <div key={proj.id || i} className="group cursor-pointer relative" onClick={() => loadProject(proj)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setActiveMenuId(proj.id); }}>
+                                                                <button onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveMenuId(activeMenuId === proj.id ? null : proj.id);
+                                                                }} className="absolute top-2 right-2 z-20 bg-black/60 p-1.5 rounded text-zinc-400 hover:text-white hover:bg-black transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1 shadow-lg border border-zinc-700/0 hover:border-zinc-500/50">
+                                                                    <MoreHorizontal size={14} />
+                                                                </button>
+                                                                {activeMenuId === proj.id && (
+                                                                    <div className="absolute top-8 right-2 z-50 w-36 bg-[#1a1a22] border border-zinc-700 rounded-xl shadow-xl flex flex-col py-1 animate-in zoom-in-95 origin-top-right" onClick={(e) => e.stopPropagation()}>
+                                                                        <button className="px-3 py-2 text-xs text-left text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2"><CopyPlus size={12} /> Make a copy</button>
+                                                                        <button onClick={() => {
+                                                                            setSavedProjects(prev => {
+                                                                                const up = prev.filter(p => p.id !== proj.id);
+                                                                                try { localStorage.setItem('canva_clone_projects', JSON.stringify(up)); } catch (e) { }
+                                                                                return up;
+                                                                            });
+                                                                            setActiveMenuId(null);
+                                                                        }} className="px-3 py-2 text-xs text-left text-red-400 hover:bg-zinc-800 hover:text-red-300 transition-colors flex items-center gap-2 border-t border-zinc-800"><Trash2 size={12} /> Move to Trash</button>
+                                                                    </div>
+                                                                )}
+                                                                <div className="aspect-[4/3] bg-zinc-900 rounded-xl border border-zinc-800 group-hover:border-[#8b3dff] overflow-hidden relative transition-colors shadow-sm">
+                                                                    {proj.thumbnail ? (
+                                                                        <img src={proj.thumbnail} alt={proj.name} className="w-full h-full object-contain" />
+                                                                    ) : (
+                                                                        <div className="absolute inset-0 flex items-center justify-center text-zinc-700"><LayersIcon size={24} /></div>
+                                                                    )}
+                                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                                                                        <span className="bg-[#8b3dff] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-all">Edit</span>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="mt-2 text-left">
+                                                                    <p className="text-[11px] text-white font-bold truncate">{proj.name}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-center p-8 border-2 border-dashed border-zinc-800 rounded-xl">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-zinc-600 mb-2 w-6 h-6"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                                        <p className="text-xs text-zinc-500 font-medium">This folder is empty.</p>
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6" onClick={() => setActiveMenuId(null)}>
+                                            {/* FOLDERS GRID */}
+                                            {['all', 'folders'].includes(activeProjectsFilter) && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Folders</h4>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <button onClick={() => setActiveFolder('Starred')} className="bg-[#1a1a22] border border-zinc-800 hover:border-zinc-500 p-3 rounded-xl flex items-center gap-3 transition-colors text-left group">
+                                                            <div className="w-8 h-8 bg-yellow-500/10 text-yellow-500 rounded-lg flex items-center justify-center shrink-0"><Star size={14} className="fill-yellow-500/20 group-hover:scale-110 transition-transform" /></div>
+                                                            <span className="text-xs font-bold text-zinc-300 truncate">Starred</span>
+                                                        </button>
+                                                        {savedFolders.map(f => (
+                                                            <div key={f.id} className="relative group cursor-pointer" onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setActiveMenuId(f.id); }}>
+                                                                <button onClick={() => setActiveFolder(f.id)} className="w-full bg-[#1a1a22] border border-zinc-800 hover:border-zinc-500 p-3 rounded-xl flex items-center gap-3 transition-colors text-left group">
+                                                                    <div className="w-8 h-8 bg-indigo-500/10 text-indigo-400 rounded-lg flex items-center justify-center shrink-0">
+                                                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M10.4 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6H12l-1.6-2z" /></svg>
+                                                                    </div>
+                                                                    <span className="text-xs font-bold text-zinc-300 truncate tracking-wide">{f.name}</span>
+                                                                </button>
+                                                                <button onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveMenuId(activeMenuId === f.id ? null : f.id);
+                                                                }} className="absolute top-1/2 -translate-y-1/2 right-2 p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 z-10">
+                                                                    <MoreHorizontal size={14} />
+                                                                </button>
+                                                                {activeMenuId === f.id && (
+                                                                    <div className="absolute top-10 right-2 w-36 bg-[#1a1a22] border border-zinc-700 rounded-xl shadow-xl flex flex-col py-1 z-50 animate-in zoom-in-95 origin-top-right" onClick={(e) => e.stopPropagation()}>
+                                                                        <button className="px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-2"><Star size={12} /> Star Folder</button>
+                                                                        <button className="px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-2 border-b border-zinc-800"><CopyPlus size={12} /> Share</button>
+                                                                        <button onClick={() => {
+                                                                            setSavedFolders(prev => {
+                                                                                const up = prev.filter(x => x.id !== f.id);
+                                                                                try { localStorage.setItem('canva_clone_folders', JSON.stringify(up)); } catch (e) { }
+                                                                                return up;
+                                                                            });
+                                                                            setActiveMenuId(null);
+                                                                        }} className="px-3 py-2 text-xs text-left text-red-400 hover:text-red-300 hover:bg-zinc-800 transition-colors flex items-center gap-2"><Trash2 size={12} /> Delete</button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                        <button onClick={() => {
+                                                            setCreateFolderName('Untitled folder');
+                                                            setIsCreateFolderModalOpen(true);
+                                                        }} className="bg-[#1e1e26] border border-dashed border-zinc-700 hover:border-[#8b3dff] p-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-left group">
+                                                            <Plus size={14} className="text-zinc-500 group-hover:text-[#8b3dff] transition-colors" />
+                                                            <span className="text-xs font-bold text-zinc-500 group-hover:text-[#8b3dff] transition-colors">Create folder</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* DESIGNS GRID */}
+                                            {['all', 'designs'].includes(activeProjectsFilter) && (
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Recent Designs</h4>
+                                                    </div>
+
+                                                    {(() => {
+                                                        const rootProjects = savedProjects.filter(p => !p.folderId);
+                                                        return rootProjects.length > 0 ? (
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                {rootProjects.map((proj, i) => (
+                                                                    <div key={proj.id || i} className="group cursor-pointer relative" onClick={() => loadProject(proj)} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setActiveMenuId(proj.id); }}>
+                                                                        <button onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setActiveMenuId(activeMenuId === proj.id ? null : proj.id);
+                                                                        }} className="absolute top-2 right-2 z-20 bg-black/60 p-1.5 rounded text-zinc-400 hover:text-white hover:bg-black transition-colors opacity-0 group-hover:opacity-100 flex items-center gap-1 shadow-lg border border-zinc-700/0 hover:border-zinc-500/50">
+                                                                            <MoreHorizontal size={14} />
+                                                                        </button>
+                                                                        {activeMenuId === proj.id && (
+                                                                            <div className="absolute top-8 right-2 z-50 w-36 bg-[#1a1a22] border border-zinc-700 rounded-xl shadow-xl flex flex-col py-1 animate-in zoom-in-95 origin-top-right" onClick={(e) => e.stopPropagation()}>
+                                                                                <button className="px-3 py-2 text-xs text-left text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center gap-2"><CopyPlus size={12} /> Make a copy</button>
+                                                                                <button onClick={() => {
+                                                                                    setSavedProjects(prev => {
+                                                                                        const up = prev.filter(p => p.id !== proj.id);
+                                                                                        try { localStorage.setItem('canva_clone_projects', JSON.stringify(up)); } catch (e) { }
+                                                                                        return up;
+                                                                                    });
+                                                                                    setActiveMenuId(null);
+                                                                                }} className="px-3 py-2 text-xs text-left text-red-400 hover:bg-zinc-800 hover:text-red-300 transition-colors flex items-center gap-2 border-t border-zinc-800"><Trash2 size={12} /> Move to Trash</button>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="aspect-[4/3] bg-zinc-900 rounded-xl border border-zinc-800 group-hover:border-[#8b3dff] overflow-hidden relative transition-colors shadow-sm">
+                                                                            {proj.thumbnail ? (
+                                                                                <img src={proj.thumbnail} alt={proj.name} className="w-full h-full object-contain" />
+                                                                            ) : (
+                                                                                <div className="absolute inset-0 flex items-center justify-center text-zinc-700"><LayersIcon size={24} /></div>
+                                                                            )}
+                                                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                                                                                <span className="bg-[#8b3dff] text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-all">Edit</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="mt-2 text-left">
+                                                                            <p className="text-[11px] text-white font-bold truncate">{proj.name}</p>
+                                                                            <p className="text-[9px] text-zinc-500 mt-0.5 truncate">{proj.updatedAt ? new Date(proj.updatedAt).toLocaleString() : 'Just now'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-center p-8 border-2 border-dashed border-zinc-800 rounded-xl bg-white/[0.01]">
+                                                                <LayersIcon size={24} className="mx-auto text-zinc-600 mb-2 opacity-50" />
+                                                                <p className="text-[11px] text-zinc-500 font-medium">No saved designs yet.</p>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -2623,25 +3412,13 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                             {/* Save Button */}
                             {authUser && (
                                 <button
-                                    onClick={async () => {
-                                        if (!fabricCanvasRef.current) return;
+                                    onClick={() => {
                                         setIsSaving(true);
-                                        try {
-                                            const canvasData = fabricCanvasRef.current.toJSON();
-                                            const payload = {
-                                                name: `Project ${new Date().toLocaleDateString()}`,
-                                                data: canvasData
-                                            };
-                                            if (currentProjectId) {
-                                                await api.put(`/projects/${currentProjectId}`, payload);
-                                            } else {
-                                                const { data } = await api.post('/projects', payload);
-                                                setCurrentProjectId(data.id);
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
-                                        setIsSaving(false);
+                                        saveCurrentDesign();
+                                        setTimeout(() => {
+                                            setIsSaving(false);
+                                            setToast({ message: 'Project saved successfully', type: 'success' });
+                                        }, 400);
                                     }}
                                     className="text-zinc-400 hover:text-white flex items-center gap-2 transition-colors text-[13px] font-semibold px-3 py-1.5 rounded-lg hover:bg-zinc-800"
                                     title="Save Project"
@@ -2762,6 +3539,16 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
 
                     <main ref={wrapperRef} className="flex-1 bg-[#0e0e12] flex items-center justify-center overflow-hidden relative"
                         onContextMenu={(e) => { e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY }); }}
+                        onPointerDown={(e) => {
+                            if (e.target === e.currentTarget) {
+                                const c = fabricCanvasRef.current;
+                                if (c) {
+                                    c.discardActiveObject();
+                                    c.renderAll();
+                                    setInlineMenuPos(null);
+                                }
+                            }
+                        }}
                         onClick={() => setContextMenu(null)}>
 
                         {/* A very subtle dotted background grid */}
@@ -2807,6 +3594,33 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                         )}
 
                         <div className="bg-white relative z-10 shadow-[0_0_50px_rgba(0,0,0,0.8)] origin-center transition-transform"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                                e.preventDefault();
+                                const type = e.dataTransfer.getData('fabricType');
+                                const url = e.dataTransfer.getData('fabricUrl');
+                                const c = fabricCanvasRef.current;
+                                if (!c) return;
+                                const pointer = c.getPointer(e.nativeEvent);
+
+                                if (type === 'rect') addObj(new (fabric as any).Rect({ left: pointer.x - 125, top: pointer.y - 125, width: 250, height: 250, fill: '#6366f1', rx: 12 }));
+                                else if (type === 'circle') addObj(new (fabric as any).Circle({ left: pointer.x - 125, top: pointer.y - 125, radius: 125, fill: '#ec4899' }));
+                                else if (type === 'triangle') addObj(new (fabric as any).Triangle({ left: pointer.x - 125, top: pointer.y - 125, width: 250, height: 250, fill: '#10b981' }));
+                                else if (type === 'line') addObj(new (fabric as any).Line([pointer.x - 150, pointer.y, pointer.x + 150, pointer.y], { stroke: '#f59e0b', strokeWidth: 8 }));
+                                else if (type === 'heading') addObj(new (fabric as any).IText('Heading Text', { left: pointer.x - 200, top: pointer.y - 50, fontSize: 84, fontFamily: 'Inter', fill: '#0f172a', fontWeight: 'bold' }));
+                                else if (type === 'subheading') addObj(new (fabric as any).IText('Subheading', { left: pointer.x - 150, top: pointer.y - 25, fontSize: 48, fontFamily: 'Inter', fill: '#334155', fontWeight: 'bold' }));
+                                else if (type === 'bodytext') addObj(new (fabric as any).IText('Body text here...', { left: pointer.x - 100, top: pointer.y - 15, fontSize: 28, fontFamily: 'Inter', fill: '#64748b' }));
+                                else if (type === 'photo' && url) {
+                                    (fabric as any).Image.fromURL(url).then((img: any) => {
+                                        img.set({ left: pointer.x - 150, top: pointer.y - 150 });
+                                        img.scaleToWidth(300);
+                                        c.add(img);
+                                        c.setActiveObject(img);
+                                        c.renderAll();
+                                        pushHistory();
+                                    }).catch(() => { });
+                                }
+                            }}
                             style={{ width: canvasWidth, height: canvasHeight, transform: `scale(${zoomRatio})` }}>
                             {Object.values(activeCursors).map((c: any) => (
                                 <div key={c.socketId} className="absolute z-[99]" style={{ left: c.cursor.x * zoomRatio, top: c.cursor.y * zoomRatio, transition: 'all 0.1s ease-out', pointerEvents: 'none' }}>
@@ -2912,6 +3726,67 @@ export default function CanvasEditor({ initialView = 'editor' }: { initialView?:
                 <div className={`fixed bottom-24 right-5 z-[999] px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom-5 ${toast.type === 'success' ? 'bg-[#1a1a22] border-emerald-500/50 text-emerald-400' : 'bg-[#1a1a22] border-red-500/50 text-red-400'} border`}>
                     <span className="text-sm font-semibold">{toast.message}</span>
                     <button onClick={() => setToast(null)} className="text-zinc-500 hover:text-white"><X size={14} /></button>
+                </div>
+            )}
+
+            {/* CREATE FOLDER MODAL OVERLAY */}
+            {isCreateFolderModalOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+                    <div
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="bg-[#14141B] border border-zinc-800 rounded-2xl w-[440px] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                    >
+                        <div className="px-5 py-4 border-b border-zinc-800/80 flex items-center justify-between">
+                            <h3 className="text-[15px] font-bold text-white tracking-wide">Create a folder</h3>
+                            <button onClick={() => setIsCreateFolderModalOpen(false)} className="text-zinc-500 hover:text-white p-1 rounded-full hover:bg-zinc-800 transition-colors">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-6">
+                            <div>
+                                <label className="text-[11px] font-bold text-zinc-400 block mb-2 px-0.5">Name</label>
+                                <input
+                                    type="text"
+                                    value={createFolderName}
+                                    onChange={(e) => setCreateFolderName(e.target.value)}
+                                    className="w-full bg-[#0c0c0e] border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white font-medium focus:outline-none focus:border-[#8b3dff] transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div>
+                                <label className="text-[11px] font-bold text-zinc-400 block mb-2 px-0.5">People with access</label>
+                                <div className="bg-[#0c0c0e] border border-zinc-800 rounded-xl p-3 flex flex-col gap-3">
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                        <input type="text" placeholder="Add emails or people" className="w-full bg-transparent text-xs text-white placeholder-zinc-500 pl-9 outline-none font-medium" />
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex items-center gap-3 px-1">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-[11px] font-black shadow-md border border-white/10 shrink-0 uppercase">
+                                        {authUser?.name ? authUser.name.substring(0, 2) : 'JD'}
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[13px] font-bold text-white">{authUser?.name || 'John Doe (you)'}</p>
+                                        <p className="text-[10px] text-zinc-400 font-medium">{authUser?.email || 'Owner'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-5 py-4 border-t border-zinc-800/80 flex justify-end">
+                            <button onClick={() => {
+                                const nf = { id: `folder_${Date.now()}`, name: createFolderName || 'Untitled folder' };
+                                setSavedFolders(prev => {
+                                    const up = [...prev, nf];
+                                    try { localStorage.setItem('canva_clone_folders', JSON.stringify(up)); } catch (e) { }
+                                    return up;
+                                });
+                                setIsCreateFolderModalOpen(false);
+                            }} className="bg-[#8b3dff] hover:bg-[#7b32e6] text-white text-[13px] font-bold px-6 py-2.5 rounded-xl shadow-lg transition-all active:scale-95">
+                                Create folder
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
